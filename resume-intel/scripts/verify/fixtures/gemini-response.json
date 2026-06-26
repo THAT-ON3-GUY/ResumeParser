@@ -1,0 +1,41 @@
+{
+  "summary_title": "Senior Engineer at Acme Corp",
+  "current_or_most_recent_employer": {
+    "company": "Acme Corp",
+    "title": "Senior Engineer",
+    "start_year": 2020,
+    "end_year": null
+  },
+  "all_employers": [
+    {
+      "company": "Acme Corp",
+      "title": "Senior Engineer",
+      "start_year": 2020,
+      "end_year": null
+    }
+  ],
+  "education": [
+    {
+      "school": "State University",
+      "degree": "BS",
+      "field": "Computer Science",
+      "graduation_year": 2018
+    }
+  ],
+  "licenses_certifications": [],
+  "skills": [
+    "JavaScript",
+    "React"
+  ],
+  "location_hints": [
+    "Boston, MA"
+  ],
+  "associations_memberships": [],
+  "languages": [
+    "English"
+  ],
+  "pronouns": null,
+  "years_experience": 6,
+  "contact_hints": [],
+  "parsing_confidence": "high"
+}
