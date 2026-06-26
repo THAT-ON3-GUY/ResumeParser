@@ -29,7 +29,10 @@ export function seedStore(overrides = {}) {
   return userDataDir
 }
 
-export function getLaunchEnv(userDataDir, { e2e = true, ddgEmpty = false } = {}) {
+export function getLaunchEnv(
+  userDataDir,
+  { e2e = true, ddgEmpty = false, linkedinFixture, geminiFixture, publicTimeout } = {}
+) {
   const env = {
     ...process.env,
     RESUME_INTEL_E2E_USER_DATA: userDataDir,
@@ -46,6 +49,22 @@ export function getLaunchEnv(userDataDir, { e2e = true, ddgEmpty = false } = {})
     env.RESUME_INTEL_E2E_DDG_EMPTY = '1'
   } else {
     delete env.RESUME_INTEL_E2E_DDG_EMPTY
+  }
+  if (linkedinFixture) {
+    env.RESUME_INTEL_E2E_LINKEDIN_FIXTURE = linkedinFixture
+  } else {
+    delete env.RESUME_INTEL_E2E_LINKEDIN_FIXTURE
+  }
+  delete env.RESUME_INTEL_E2E_LINKEDIN_ATTEMPT_FIXTURES
+  if (geminiFixture) {
+    env.RESUME_INTEL_E2E_GEMINI_FIXTURE = geminiFixture
+  } else {
+    delete env.RESUME_INTEL_E2E_GEMINI_FIXTURE
+  }
+  if (publicTimeout) {
+    env.RESUME_INTEL_E2E_PUBLIC_TIMEOUT = publicTimeout
+  } else {
+    delete env.RESUME_INTEL_E2E_PUBLIC_TIMEOUT
   }
   return env
 }

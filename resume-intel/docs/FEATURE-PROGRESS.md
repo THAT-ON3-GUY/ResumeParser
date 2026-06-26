@@ -17,9 +17,9 @@ npm run mark-done -- --feature 9.1
 | 2.3 | AI Summarization | MISSING | — | — |
 | 3.1 | DuckDuckGo Search | DONE | yes | yes |
 | 3.2 | Google Search Fallback | MISSING | — | — |
-| 4.1 | LinkedIn Scraping | MISSING | — | — |
+| 4.1 | LinkedIn Scraping | DONE | yes | yes |
 | 4.2 | LinkedIn Login Flow | DONE | yes | yes |
-| 5.1 | Public Records APIs | MISSING | — | — |
+| 5.1 | Public Records APIs | DONE | yes | yes |
 | 6.1 | Results Table (full) | PARTIAL | — | — |
 | 6.2 | Candidate Detail Drawer | PARTIAL | — | — |
 | 7.1 | CSV & Excel Export | MISSING | — | — |

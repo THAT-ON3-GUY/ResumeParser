@@ -1,19 +1,18 @@
-import {
-  getCurrentEmployer,
-  getAllEmployers,
-  joinList
-} from '../lib/parsedResume.js'
+import { useMemo, useState } from 'react'
+import { getCurrentEmployer } from '../lib/parsedResume.js'
+import { ConfidenceBadge, LinkedInBadge, LicenseBadge } from './Badges.jsx'
 
-function cell(value) {
-  if (value === null || value === undefined || value === '') return '—'
-  return String(value)
-}
-
-function truncate(s, max = 48) {
-  const t = cell(s)
-  if (t === '—') return t
-  return t.length > max ? `${t.slice(0, max - 1)}…` : t
-}
+const COLUMNS = [
+  { key: 'fileName', label: 'File name' },
+  { key: 'role', label: 'Role' },
+  { key: 'employer', label: 'Employer' },
+  { key: 'education', label: 'Education' },
+  { key: 'license', label: 'License', static: true },
+  { key: 'years', label: 'Exp' },
+  { key: 'linkedin', label: 'LinkedIn', static: true },
+  { key: 'confidence', label: 'Confidence', static: true },
+  { key: 'actions', label: 'Actions', static: true }
+]
 
 function educationSummary(edu) {
   if (!Array.isArray(edu) || !edu.length) return '—'
@@ -21,149 +20,258 @@ function educationSummary(edu) {
   const parts = [e.degree, e.field].filter(Boolean).join(', ')
   const school = e.school || '—'
   const yr = e.graduation_year != null ? ` (${e.graduation_year})` : ''
-  return truncate(`${parts ? `${parts} @ ` : ''}${school}${yr}`, 56)
+  return `${parts ? `${parts} @ ` : ''}${school}${yr}`
 }
 
-function educationTitleAttr(edu) {
-  if (!Array.isArray(edu) || !edu.length) return ''
-  const e = edu[0]
-  return [e.degree, e.field, e.school, e.graduation_year].filter((x) => x != null && x !== '').join(' · ')
+function firstLicense(licenses) {
+  if (!Array.isArray(licenses) || !licenses.length) return null
+  const item = licenses[0]
+  if (typeof item === 'string') return item
+  return item?.name || null
 }
 
-function licensesSummary(lic) {
-  if (!Array.isArray(lic) || !lic.length) return '—'
-  return truncate(lic.map((l) => l.name).filter(Boolean).join(', '), 40)
+function rowStatusLabel(row) {
+  if (row.status === 'parsing') return 'Parsing…'
+  if (row.status === 'error') return `Error: ${row.error}`
+  return 'Done'
 }
 
-function confidenceClass(conf) {
-  const c = String(conf || 'low').toLowerCase()
-  if (c === 'high') return 'conf-high'
-  if (c === 'medium') return 'conf-medium'
-  return 'conf-low'
+function sortValue(row, key) {
+  const p = row.parsed
+  const cur = p ? getCurrentEmployer(p) : null
+  switch (key) {
+    case 'fileName':
+      return row.fileName
+    case 'role':
+      return cur?.title ?? ''
+    case 'employer':
+      return cur?.company ?? ''
+    case 'education':
+      return educationSummary(p?.education)
+    case 'years':
+      return p?.years_experience ?? -1
+    case 'confidence':
+      return p?.parsing_confidence ?? ''
+    default:
+      return ''
+  }
 }
 
-export default function ResultsTable({ rows, onOpenDetail, onDeleteRow }) {
+export default function ResultsTable({
+  rows,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  onOpenDetail,
+  onDeleteRow,
+  onRerunSearch,
+  searchQuery
+}) {
+  const [sortKey, setSortKey] = useState('fileName')
+  const [sortDir, setSortDir] = useState('asc')
+
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((row) => {
+      const p = row.parsed
+      const cur = p ? getCurrentEmployer(p) : null
+      const haystack = [
+        row.fileName,
+        cur?.title,
+        cur?.company,
+        educationSummary(p?.education),
+        ...(p?.skills ?? [])
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [rows, searchQuery])
+
+  const sortedRows = useMemo(() => {
+    const list = [...filteredRows]
+    list.sort((a, b) => {
+      const av = sortValue(a, sortKey)
+      const bv = sortValue(b, sortKey)
+      if (av === bv) return 0
+      if (av == null || av === '') return 1
+      if (bv == null || bv === '') return -1
+      const cmp = av > bv ? 1 : -1
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return list
+  }, [filteredRows, sortKey, sortDir])
+
+  const allSelected =
+    sortedRows.length > 0 && sortedRows.every((row) => selectedIds.has(row.id))
+
+  const handleSort = (key, staticCol) => {
+    if (staticCol) return
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
   if (!rows.length) {
     return (
-      <p className="empty-table" data-testid="empty-table">
-        No files yet. Upload resumes above.
-      </p>
+      <div
+        data-testid="empty-table"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          color: 'var(--text-muted)'
+        }}
+      >
+        <i className="ti ti-file-search" style={{ fontSize: '40px' }} aria-hidden="true" />
+        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>
+          No candidates yet
+        </p>
+        <p style={{ fontSize: '12px', margin: 0 }}>Drop resume files above to get started</p>
+      </div>
     )
   }
 
   return (
-    <div className="table-wrap table-wrap-wide" data-testid="results-table">
-      <table className="results-table results-table-dense">
+    <div className="table-wrapper" data-testid="results-table">
+      <table>
         <thead>
           <tr>
-            <th>File</th>
-            <th>Summary title</th>
-            <th>Employer</th>
-            <th>Title</th>
-            <th>Location</th>
-            <th>Education</th>
-            <th>Licenses</th>
-            <th>Yrs exp</th>
-            <th>Skills</th>
-            <th>Confidence</th>
-            <th>Detail</th>
-            <th>Delete</th>
-            <th>Status</th>
+            <th style={{ width: 28, cursor: 'default' }}>
+              <span
+                role="checkbox"
+                aria-checked={allSelected}
+                className={`row-checkbox ${allSelected ? 'checked' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleSelectAll(sortedRows.map((r) => r.id), !allSelected)
+                }}
+                data-testid="row-checkbox-all"
+              />
+            </th>
+            {COLUMNS.map((col) => (
+              <th
+                key={col.key}
+                style={col.static ? { cursor: 'default' } : undefined}
+                onClick={() => handleSort(col.key, col.static)}
+              >
+                {col.label}
+                {!col.static && sortKey === col.key ? (
+                  <i className="ti ti-chevron-down" aria-hidden="true" />
+                ) : null}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {sortedRows.map((row) => {
             const p = row.parsed
             const cur = p ? getCurrentEmployer(p) : null
-            const loc = p ? joinList(p.location_hints) : ''
-            const edu = p ? educationSummary(p.education) : '—'
-            const lic = p ? licensesSummary(p.licenses_certifications) : '—'
-            const skillsFull = p && Array.isArray(p.skills) ? joinList(p.skills) : ''
-            const skills = truncate(skillsFull, 64)
-            const conf = p?.parsing_confidence
-            const summaryTitle = p?.summary_title
-            const allEmps = p ? getAllEmployers(p) : []
-            const legacyTop = p?.previous_employers?.[0]
-
-            const employerCell =
-              cur?.company ?? legacyTop?.company ?? (allEmps[0]?.company || '—')
-            const titleCell = cur?.title ?? legacyTop?.title ?? (allEmps[0]?.title || '—')
+            const selected = selectedIds.has(row.id)
+            const linkedInFound = Boolean(row.linkedinData)
+            const license = row.status === 'done' ? firstLicense(p?.licenses_certifications) : null
 
             return (
-              <tr key={row.id} data-testid="result-row">
-                <td className="mono col-file" title={row.fileName}>
-                  {truncate(row.fileName, 28)}
+              <tr
+                key={row.id}
+                className={selected ? 'row-selected' : ''}
+                onClick={() => row.status === 'done' && p && onOpenDetail?.(row.id)}
+                data-testid="result-row"
+              >
+                <td onClick={(e) => e.stopPropagation()}>
+                  <span
+                    role="checkbox"
+                    aria-checked={selected}
+                    className={`row-checkbox ${selected ? 'checked' : ''}`}
+                    onClick={() => onToggleSelect(row.id)}
+                    data-testid={`row-checkbox-${row.id}`}
+                  />
                 </td>
-                <td className="mono col-summary" title={summaryTitle || ''}>
-                  {row.status === 'done' ? truncate(summaryTitle, 40) : '…'}
+                <td className="td-filename" title={row.fileName}>
+                  {row.fileName}
                 </td>
-                <td className="mono" title={employerCell}>
-                  {row.status === 'done' ? truncate(employerCell, 28) : '…'}
+                <td className="td-muted">
+                  {row.status === 'done' ? cur?.title || '—' : '…'}
                 </td>
-                <td className="mono" title={titleCell}>
-                  {row.status === 'done' ? truncate(titleCell, 32) : '…'}
+                <td className="td-muted">
+                  {row.status === 'done' ? cur?.company || '—' : '…'}
                 </td>
-                <td className="mono col-loc" title={loc}>
-                  {row.status === 'done' ? truncate(loc, 36) : '…'}
-                </td>
-                <td className="mono col-edu" title={row.status === 'done' && p ? educationTitleAttr(p.education) : ''}>
-                  {row.status === 'done' ? edu : '…'}
-                </td>
-                <td className="mono" title={lic}>
-                  {row.status === 'done' ? lic : '…'}
-                </td>
-                <td className="mono">
-                  {row.status === 'done' ? cell(p?.years_experience) : '…'}
-                </td>
-                <td className="mono col-skills" title={skillsFull}>
-                  {row.status === 'done' ? skills : '…'}
+                <td className="td-muted">
+                  {row.status === 'done' ? educationSummary(p?.education) : '…'}
                 </td>
                 <td>
-                  {row.status === 'done' && conf ? (
-                    <span className={`conf-badge ${confidenceClass(conf)}`}>{conf}</span>
-                  ) : row.status === 'done' ? (
-                    <span className="conf-badge conf-low">—</span>
+                  {row.status === 'done' ? (
+                    <LicenseBadge license={license} testId={`badge-license-${row.id}`} />
+                  ) : (
+                    '…'
+                  )}
+                </td>
+                <td className="td-muted">
+                  {row.status === 'done' ? (p?.years_experience ?? '—') : '…'}
+                </td>
+                <td>
+                  {row.status === 'done' ? (
+                    <LinkedInBadge found={linkedInFound} testId={`badge-linkedin-${row.id}`} />
                   ) : (
                     '…'
                   )}
                 </td>
                 <td>
-                  {row.status === 'done' && p ? (
-                    <button
-                      type="button"
-                      className="btn-detail"
-                      onClick={() => onOpenDetail?.(row.id)}
-                      data-testid="view-detail-btn"
-                    >
-                      View full detail
-                    </button>
+                  {row.status === 'done' && p?.parsing_confidence ? (
+                    <ConfidenceBadge score={p.parsing_confidence} testId={`badge-confidence-${row.id}`} />
+                  ) : row.status === 'done' ? (
+                    <ConfidenceBadge score="low" testId={`badge-confidence-${row.id}`} />
                   ) : (
-                    '—'
+                    '…'
                   )}
                 </td>
-                <td>
-                  {row.status !== 'parsing' ? (
-                    <button
-                      type="button"
-                      className="btn-delete"
-                      onClick={() => onDeleteRow?.(row)}
-                      title="Remove from database"
-                      data-testid="result-delete"
-                    >
-                      Delete
-                    </button>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td data-testid="result-status">
-                  {row.status === 'parsing' && <span className="status parsing">Parsing…</span>}
-                  {row.status === 'done' && <span className="status done">Done</span>}
-                  {row.status === 'error' && (
-                    <span className="status error" title={row.error}>
-                      Error: {row.error}
+                <td onClick={(e) => e.stopPropagation()}>
+                  <div className="row-actions">
+                    {row.status === 'done' && p ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="View detail"
+                        onClick={() => onOpenDetail?.(row.id)}
+                        data-testid="view-detail-btn"
+                      >
+                        <i className="ti ti-eye" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    {row.dbId != null ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Re-run search"
+                        onClick={() => onRerunSearch?.(row)}
+                        data-testid={`row-action-search-${row.id}`}
+                      >
+                        <i className="ti ti-refresh" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    {row.status !== 'parsing' ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Delete"
+                        onClick={() => onDeleteRow?.(row)}
+                        data-testid="result-delete"
+                      >
+                        <i className="ti ti-trash" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    <span data-testid="result-status" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {rowStatusLabel(row)}
                     </span>
-                  )}
+                  </div>
                 </td>
               </tr>
             )

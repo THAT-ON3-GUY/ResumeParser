@@ -113,7 +113,26 @@ function writeLinkedInHtml() {
 <h1>Jane Recruit</h1>
 <div class="text-body-medium">Senior Engineer at Acme Corp</div>
 <div class="text-body-small inline">Boston, Massachusetts</div>
+<p class="profile-about">Experienced software engineer focused on platform reliability.</p>
+<div class="experience-entry">
+  <span class="exp-title">Senior Engineer</span>
+  <span class="exp-company">Acme Corp</span>
+  <span class="exp-duration">2020 – Present</span>
+</div>
+<div class="education-entry">
+  <span class="edu-school">State University</span>
+  <span class="edu-degree">BS Computer Science</span>
+</div>
+<p class="contact-info">jane.recruit@example.com</p>
 </body></html>`
+  )
+  writeFileSync(
+    join(OUT, 'linkedin-profile-404.html'),
+    `<html><body><h1>Page not found</h1><p>This page doesn't exist.</p></body></html>`
+  )
+  writeFileSync(
+    join(OUT, 'linkedin-login.html'),
+    `<html><body><form action="/login"><h1>Sign in to LinkedIn</h1></form></body></html>`
   )
 }
 
@@ -123,4 +142,4 @@ await writeDocx()
 writeGeminiResponse()
 writeDdgHtml()
 writeLinkedInHtml()
-console.log('[fixtures] Wrote sample-resume.pdf, sample-resume.docx, gemini-response.json, ddg-results.html, linkedin-profile.html')
+console.log('[fixtures] Wrote sample-resume.pdf, sample-resume.docx, gemini-response.json, ddg-results.html, linkedin-profile.html, linkedin-profile-404.html, linkedin-login.html')

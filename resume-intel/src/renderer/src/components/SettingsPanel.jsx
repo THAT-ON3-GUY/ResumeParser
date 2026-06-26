@@ -3,35 +3,53 @@ import { useCallback, useEffect, useState } from 'react'
 function KeyStatus({ value }) {
   const set = Boolean(value && String(value).trim())
   return (
-    <span className={`key-status ${set ? 'key-set' : 'key-unset'}`}>{set ? 'Set' : 'Not set'}</span>
+    <span className={`badge ${set ? 'badge-found' : 'badge-missing'}`}>{set ? 'Set' : 'Not set'}</span>
   )
 }
 
 function PasswordField({ label, value, onChange, savedFlash, testId, statusTestId }) {
   const [show, setShow] = useState(false)
   return (
-    <label className="settings-field">
-      <span className="settings-label-row">
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10, fontSize: 12 }}>
+      <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{label}</span>
         <span data-testid={statusTestId}>
           <KeyStatus value={value} />
         </span>
       </span>
-      <div className="password-row">
+      <div style={{ display: 'flex', gap: 8 }}>
         <input
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete="off"
           data-testid={testId}
+          style={{
+            flex: 1,
+            padding: '5px 10px',
+            border: '0.5px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            fontSize: 12,
+            background: 'var(--surface-2)'
+          }}
         />
-        <button type="button" className="btn-ghost" onClick={() => setShow((s) => !s)}>
+        <button type="button" className="btn" onClick={() => setShow((s) => !s)}>
           {show ? 'Hide' : 'Show'}
         </button>
       </div>
-      {savedFlash ? <span className="saved-flash">Saved ✓</span> : null}
+      {savedFlash ? (
+        <span style={{ fontSize: 11, color: 'var(--badge-found-text)' }}>Saved</span>
+      ) : null}
     </label>
   )
+}
+
+const blockStyle = {
+  background: 'var(--surface-2)',
+  border: '0.5px solid var(--border)',
+  borderRadius: 'var(--radius)',
+  padding: '12px 16px',
+  marginBottom: 12
 }
 
 export default function SettingsPanel({ onClearAllData, onBack }) {
@@ -69,9 +87,7 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
   }
 
   const handleClearAll = async () => {
-    const ok = window.confirm(
-      'Delete all saved candidate records? This cannot be undone.'
-    )
+    const ok = window.confirm('Delete all saved candidate records? This cannot be undone.')
     if (!ok) return
     await window.electron.clearAllCandidates()
     onClearAllData?.()
@@ -93,26 +109,23 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
   }
 
   if (error) {
-    return <p className="settings-error">Settings error: {error}</p>
+    return (
+      <p style={{ padding: 16, fontSize: 12, color: 'var(--badge-low-text)' }}>Settings error: {error}</p>
+    )
   }
 
   if (!settings) {
-    return <p className="empty-table">Loading settings…</p>
+    return <p style={{ padding: 16, fontSize: 12, color: 'var(--text-muted)' }}>Loading settings…</p>
   }
 
   return (
-    <div className="settings-panel" data-testid="settings-panel">
-      <header className="settings-header">
-        <h2>Settings</h2>
-        <button type="button" className="btn-ghost" onClick={onBack} data-testid="settings-back">
-          ← Back to candidates
-        </button>
-      </header>
-
-      <section className="settings-section">
-        <h3>AI provider</h3>
-        <div className="toggle-row">
-          <label className="radio-pill">
+    <div style={{ flex: 1, overflow: 'auto', padding: 16 }} data-testid="settings-panel">
+      <section style={blockStyle}>
+        <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
+          AI provider
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <label className="btn" style={{ cursor: 'pointer' }}>
             <input
               type="radio"
               name="aiProvider"
@@ -122,7 +135,7 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
             />
             Gemini (free)
           </label>
-          <label className="radio-pill">
+          <label className="btn" style={{ cursor: 'pointer' }}>
             <input
               type="radio"
               name="aiProvider"
@@ -130,14 +143,18 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
               onChange={() => save('aiProvider', 'claude')}
               data-testid="settings-ai-claude"
             />
-            Claude (paid, higher accuracy)
+            Claude (paid)
           </label>
         </div>
-        {flashKey === 'aiProvider' ? <span className="saved-flash">Saved ✓</span> : null}
+        {flashKey === 'aiProvider' ? (
+          <span style={{ fontSize: 11, color: 'var(--badge-found-text)' }}>Saved</span>
+        ) : null}
       </section>
 
-      <section className="settings-section">
-        <h3>API keys</h3>
+      <section style={blockStyle}>
+        <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
+          API keys
+        </div>
         <PasswordField
           label="Gemini API key"
           value={settings.geminiApiKey ?? ''}
@@ -146,16 +163,14 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
           testId="settings-gemini-key"
           statusTestId="settings-gemini-status"
         />
-        <p className="settings-helper">
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => openLink('https://aistudio.google.com')}
-            data-testid="settings-link-gemini"
-          >
-            Get a free key at aistudio.google.com →
-          </button>
-        </p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => openLink('https://aistudio.google.com')}
+          data-testid="settings-link-gemini"
+        >
+          Get a free key at aistudio.google.com
+        </button>
 
         <PasswordField
           label="Claude API key"
@@ -165,18 +180,14 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
           testId="settings-claude-key"
           statusTestId="settings-claude-status"
         />
-        <p className="settings-helper">
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => openLink('https://console.anthropic.com')}
-            data-testid="settings-link-claude"
-          >
-            Get a key at console.anthropic.com →
-          </button>
-          {' · '}
-          <span className="settings-muted">~$0.01–0.02 per resume</span>
-        </p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => openLink('https://console.anthropic.com')}
+          data-testid="settings-link-claude"
+        >
+          Get a key at console.anthropic.com
+        </button>
 
         <PasswordField
           label="Google Custom Search API key (optional)"
@@ -192,47 +203,39 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
         />
       </section>
 
-      <section className="settings-section">
-        <h3>LinkedIn</h3>
-        <p className="settings-muted">
+      <section style={blockStyle}>
+        <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
+          LinkedIn
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
           Status:{' '}
           <span
-            className={settings.linkedinConnected ? 'status-linked-in-on' : 'status-linked-in-off'}
+            className={`badge ${settings.linkedinConnected ? 'badge-found' : 'badge-missing'}`}
             data-testid="settings-linkedin-status"
           >
             {settings.linkedinConnected ? 'Connected' : 'Not connected'}
           </span>
         </p>
-        <p className="settings-muted">
-          Sign in once in a browser window. Only session cookies are stored locally — never your password.
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
+          Sign in once in a browser window. Only session cookies are stored locally.
         </p>
         {settings.linkedinConnected ? (
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={handleLinkedInDisconnect}
-            data-testid="settings-linkedin-disconnect"
-          >
+          <button type="button" className="btn" onClick={handleLinkedInDisconnect} data-testid="settings-linkedin-disconnect">
             Disconnect LinkedIn
           </button>
         ) : (
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={handleLinkedInConnect}
-            data-testid="settings-linkedin-connect"
-          >
+          <button type="button" className="btn btn-primary" onClick={handleLinkedInConnect} data-testid="settings-linkedin-connect">
             Connect LinkedIn
           </button>
         )}
       </section>
 
-      <section className="settings-section">
-        <h3>Search behavior</h3>
-        <label className="settings-field">
-          <span>
-            Search delay between requests: {settings.searchDelaySeconds}s
-          </span>
+      <section style={blockStyle}>
+        <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
+          Search behavior
+        </div>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, marginBottom: 8 }}>
+          <span>Search delay between requests: {settings.searchDelaySeconds}s</span>
           <input
             type="range"
             min={2}
@@ -241,7 +244,7 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
             onChange={(e) => save('searchDelaySeconds', Number(e.target.value))}
           />
         </label>
-        <label className="checkbox-row">
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, marginBottom: 8 }}>
           <input
             type="checkbox"
             checked={Boolean(settings.autoSearchOnUpload)}
@@ -249,11 +252,18 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
           />
           Auto-search on upload
         </label>
-        <label className="settings-field">
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
           <span>Default export format</span>
           <select
             value={settings.defaultExportFormat ?? 'csv'}
             onChange={(e) => save('defaultExportFormat', e.target.value)}
+            style={{
+              padding: '5px 10px',
+              border: '0.5px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              fontSize: 12,
+              background: 'var(--surface-2)'
+            }}
           >
             <option value="csv">CSV</option>
             <option value="excel">Excel</option>
@@ -261,13 +271,21 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
         </label>
       </section>
 
-      <section className="settings-section settings-danger">
-        <h3>Data management</h3>
-        <p className="settings-muted">Removes all candidate records from local SQLite storage.</p>
-        <button type="button" className="btn-delete" onClick={handleClearAll} data-testid="settings-clear-all">
+      <section style={{ ...blockStyle, borderColor: 'var(--border-strong)' }}>
+        <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
+          Data management
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
+          Removes all candidate records from local SQLite storage.
+        </p>
+        <button type="button" className="btn" onClick={handleClearAll} data-testid="settings-clear-all">
           Clear all data
         </button>
       </section>
+
+      <button type="button" className="btn" onClick={onBack} data-testid="settings-back">
+        ← Back to candidates
+      </button>
     </div>
   )
 }

@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import UploadZone from './components/UploadZone.jsx'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ResultsTable from './components/ResultsTable.jsx'
 import CandidateDetailDrawer from './components/CandidateDetailDrawer.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
 import SearchStatus from './components/SearchStatus.jsx'
+import Sidebar from './components/Sidebar.jsx'
+import Topbar from './components/Topbar.jsx'
+import StatusBar from './components/StatusBar.jsx'
 import { candidateRecordToRow } from './lib/dbRows.js'
 
 export default function App() {
@@ -13,6 +15,12 @@ export default function App() {
   const [loadingDb, setLoadingDb] = useState(true)
   const [uploadRejection, setUploadRejection] = useState(null)
   const [searchStatus, setSearchStatus] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [filters, setFilters] = useState({ mode: 'all' })
+  const [settings, setSettings] = useState(null)
+  const [processingTotal, setProcessingTotal] = useState(0)
+  const uploadInputRef = useRef(null)
 
   const detailRow = useMemo(() => rows.find((r) => r.id === detailRowId) ?? null, [rows, detailRowId])
 
@@ -26,6 +34,10 @@ export default function App() {
     ;(async () => {
       try {
         if (!cancelled) await loadCandidates()
+        if (!cancelled) {
+          const s = await window.electron.getSettings()
+          if (!cancelled) setSettings(s)
+        }
       } catch (err) {
         console.error('[App] Failed to load candidates from database', err)
       } finally {
@@ -36,6 +48,46 @@ export default function App() {
       cancelled = true
     }
   }, [loadCandidates])
+
+  useEffect(() => {
+    const unsub = window.electron.onLinkedInSessionExpired?.(() => {
+      setRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          linkedinData: null,
+          searchResults: row.searchResults
+            ? { ...row.searchResults, linkedinSessionExpired: true }
+            : row.searchResults
+        }))
+      )
+    })
+    return () => unsub?.()
+  }, [])
+
+  const filterCounts = useMemo(
+    () => ({
+      all: rows.length,
+      linkedin: rows.filter((r) => r.linkedinData).length,
+      high: rows.filter((r) => String(r.parsed?.parsing_confidence).toLowerCase() === 'high').length
+    }),
+    [rows]
+  )
+
+  const filteredRows = useMemo(() => {
+    if (filters.mode === 'linkedin') return rows.filter((r) => r.linkedinData)
+    if (filters.mode === 'high') {
+      return rows.filter((r) => String(r.parsed?.parsing_confidence).toLowerCase() === 'high')
+    }
+    return rows
+  }, [rows, filters.mode])
+
+  const processingCount = rows.filter((r) => r.status === 'parsing').length
+
+  const linkedInMatchCount = rows.filter((r) => r.linkedinData).length
+
+  const openUploadDialog = useCallback(() => {
+    uploadInputRef.current?.click()
+  }, [])
 
   const handleFilesSelected = useCallback(async (files) => {
     const all = Array.from(files ?? [])
@@ -52,6 +104,7 @@ export default function App() {
     }
 
     setUploadRejection(null)
+    setView('candidates')
 
     const pending = list.map((file) => ({
       id: crypto.randomUUID(),
@@ -62,6 +115,8 @@ export default function App() {
       error: null,
       dbId: null
     }))
+
+    setProcessingTotal(pending.length)
 
     setRows((prev) => [
       ...prev,
@@ -77,13 +132,14 @@ export default function App() {
 
     for (const item of pending) {
       try {
-        setSearchStatus('Parsing resume…')
+        const currentSettings = await window.electron.getSettings()
+        setSettings(currentSettings)
+        setSearchStatus(
+          currentSettings.linkedinConnected
+            ? 'Parsing resume & checking LinkedIn…'
+            : 'Parsing resume & searching…'
+        )
         const result = await window.electron.parseResume(item.filePath)
-        if (result.searchResults) {
-          setSearchStatus(
-            result.linkedinData != null ? 'Checking LinkedIn…' : 'Searching DuckDuckGo…'
-          )
-        }
         setRows((prev) =>
           prev.map((row) =>
             row.id === item.id
@@ -95,14 +151,13 @@ export default function App() {
                   parsed: result.parsed,
                   searchResults: result.searchResults ?? null,
                   linkedinData: result.linkedinData ?? null,
+                  publicRecords: result.publicRecords ?? null,
                   error: null
                 }
               : row
           )
         )
-        setSearchStatus(null)
       } catch (err) {
-        setSearchStatus(null)
         const message = err?.message ?? String(err)
         setRows((prev) =>
           prev.map((row) =>
@@ -111,7 +166,28 @@ export default function App() {
         )
       }
     }
+
+    setSearchStatus(null)
+    setProcessingTotal(0)
   }, [])
+
+  const handleUploadInputChange = (e) => {
+    const files = e.target.files
+    if (files?.length) handleFilesSelected(files)
+    e.target.value = ''
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = e.dataTransfer?.files
+    if (files?.length) handleFilesSelected(files)
+  }
 
   const handleDeleteRow = useCallback(
     async (row) => {
@@ -122,6 +198,11 @@ export default function App() {
       try {
         await window.electron.deleteCandidate(row.dbId)
         setRows((prev) => prev.filter((r) => r.id !== row.id))
+        setSelectedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(row.id)
+          return next
+        })
         if (detailRowId === row.id) setDetailRowId(null)
       } catch (err) {
         console.error('[App] deleteCandidate failed', err)
@@ -130,58 +211,171 @@ export default function App() {
     [detailRowId]
   )
 
+  const handleRerunSearch = useCallback(async (row) => {
+    if (row.dbId == null) return
+    try {
+      setSearchStatus('Re-running search…')
+      const outcome = await window.electron.runSearch(row.dbId)
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id
+            ? {
+                ...r,
+                searchResults: outcome.searchResults ?? r.searchResults,
+                linkedinData: outcome.linkedinData ?? null,
+                publicRecords: outcome.publicRecords ?? r.publicRecords
+              }
+            : r
+        )
+      )
+    } catch (err) {
+      console.error('[App] runSearch failed', err)
+    } finally {
+      setSearchStatus(null)
+    }
+  }, [])
+
   const handleClearAllData = useCallback(async () => {
     setRows([])
     setDetailRowId(null)
+    setSelectedIds(new Set())
     await loadCandidates()
   }, [loadCandidates])
 
+  const toggleSelect = useCallback((id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback((ids, select) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      for (const id of ids) {
+        if (select) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+  }, [])
+
+  const aiModelLabel =
+    settings?.aiProvider === 'claude'
+      ? 'Claude'
+      : settings?.geminiModel?.replace(/^gemini-/i, 'Gemini ') || 'Gemini 1.5 Flash'
+
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">Resume Intel</div>
-        <nav className="sidebar-nav">
-          <button
-            type="button"
-            className={view === 'candidates' ? 'nav-item active' : 'nav-item'}
-            onClick={() => setView('candidates')}
-            data-testid="nav-candidates"
-          >
-            Candidates
-          </button>
-          <button
-            type="button"
-            className={view === 'settings' ? 'nav-item active' : 'nav-item'}
-            onClick={() => setView('settings')}
-            title="Settings"
-            aria-label="Settings"
-            data-testid="nav-settings"
-          >
-            ⚙ Settings
-          </button>
-        </nav>
-      </aside>
+      <Sidebar
+        view={view}
+        onNavigate={setView}
+        onUploadClick={openUploadDialog}
+        filters={filters}
+        onFilterChange={(mode) => setFilters({ mode })}
+        filterCounts={filterCounts}
+      />
 
-      <main className="main-content">
+      <main className="main-content" onDragOver={handleDragOver} onDrop={handleDrop}>
+        <input
+          ref={uploadInputRef}
+          type="file"
+          accept=".pdf,.docx"
+          multiple
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            opacity: 0,
+            overflow: 'hidden'
+          }}
+          onChange={handleUploadInputChange}
+          data-testid="upload-input"
+        />
+
         {view === 'settings' ? (
-          <SettingsPanel onClearAllData={handleClearAllData} onBack={() => setView('candidates')} />
+          <div className="main-scroll" data-testid="settings-view">
+            <Topbar
+              title="Settings"
+              searchQuery=""
+              onSearchChange={() => {}}
+              onUploadClick={openUploadDialog}
+              onExportClick={() => {}}
+              exportDisabled
+            />
+            <SettingsPanel onClearAllData={handleClearAllData} onBack={() => setView('candidates')} />
+            <StatusBar
+              candidateCount={rows.length}
+              linkedInCount={linkedInMatchCount}
+              aiModel={aiModelLabel}
+              lastUpdated="just now"
+            />
+          </div>
         ) : (
-          <div data-testid="candidates-view">
-            <header className="app-header">
-              <h1>Candidates</h1>
-              <p className="subtitle">
-                Drop PDF or Word resumes to extract structured fields — results saved locally
+          <div className="main-scroll" data-testid="candidates-view">
+            <Topbar
+              title="Candidates"
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onUploadClick={openUploadDialog}
+              onExportClick={() => {}}
+              exportDisabled={rows.length === 0}
+            />
+
+            {uploadRejection ? (
+              <p
+                data-testid="upload-rejection"
+                role="alert"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  color: 'var(--badge-low-text)',
+                  background: 'var(--badge-low-bg)',
+                  borderBottom: '0.5px solid var(--border)',
+                  margin: 0
+                }}
+              >
+                {uploadRejection}
               </p>
-            </header>
-            <UploadZone onFilesSelected={handleFilesSelected} rejectionMessage={uploadRejection} />
-            <SearchStatus message={searchStatus} />
-            {loadingDb ? <p className="empty-table">Loading saved candidates…</p> : null}
-            <ResultsTable rows={rows} onOpenDetail={setDetailRowId} onDeleteRow={handleDeleteRow} />
-            {detailRow?.status === 'done' && detailRow.parsed && (
-              <CandidateDetailDrawer row={detailRow} onClose={() => setDetailRowId(null)} />
-            )}
+            ) : null}
+
+            <SearchStatus
+              message={searchStatus}
+              processingCount={processingCount}
+              totalCount={processingTotal || processingCount}
+            />
+
+            {loadingDb ? (
+              <p style={{ padding: '16px', fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                Loading saved candidates…
+              </p>
+            ) : null}
+
+            <ResultsTable
+              rows={filteredRows}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              onOpenDetail={setDetailRowId}
+              onDeleteRow={handleDeleteRow}
+              onRerunSearch={handleRerunSearch}
+              searchQuery={searchQuery}
+            />
+
+            <StatusBar
+              candidateCount={rows.length}
+              linkedInCount={linkedInMatchCount}
+              aiModel={aiModelLabel}
+              lastUpdated="just now"
+            />
           </div>
         )}
+
+        {detailRow?.status === 'done' && detailRow.parsed ? (
+          <CandidateDetailDrawer row={detailRow} onClose={() => setDetailRowId(null)} />
+        ) : null}
       </main>
     </div>
   )

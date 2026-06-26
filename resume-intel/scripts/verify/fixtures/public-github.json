@@ -1,0 +1,7 @@
+{
+  "found": true,
+  "profiles": [
+    { "login": "jane-recruit", "html_url": "https://github.com/jane-recruit", "type": "User" }
+  ],
+  "status": "ok"
+}

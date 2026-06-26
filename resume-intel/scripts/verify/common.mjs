@@ -19,12 +19,22 @@ export const FEATURE_MAP = {
   '2.2': { files: ['src/main/parser/claudeParser.js'], ipc: [] },
   '2.3': { files: ['src/main/parser/prompts.js'], ipc: [] },
   '3.1': { files: ['src/main/search/duckduckgo.js', 'src/renderer/src/components/SearchStatus.jsx'], ipc: ['search:run'] },
-  '4.1': { files: ['src/main/search/linkedin.js'], ipc: [] },
+  '4.1': {
+    files: [
+      'src/main/search/linkedin.js',
+      'src/renderer/src/components/CandidateDetailDrawer.jsx',
+      'src/main/db/database.js'
+    ],
+    ipc: ['search:run', 'resume:parse']
+  },
   '4.2': {
     files: ['src/main/search/linkedin.js'],
     ipc: ['linkedin:login', 'linkedin:disconnect', 'linkedin:status']
   },
-  '5.1': { files: ['src/main/search/publicSources.js'], ipc: [] },
+  '5.1': {
+    files: ['src/main/search/publicSources.js', 'src/renderer/src/components/CandidateDetailDrawer.jsx'],
+    ipc: ['resume:parse', 'search:run']
+  },
   '6.1': { files: ['src/renderer/src/components/ResultsTable.jsx'], ipc: ['db:get-all'] },
   '6.2': { files: ['src/renderer/src/components/CandidateDetailDrawer.jsx'], ipc: [] },
   '7.1': { files: ['src/main/export/exporter.js'], ipc: ['export:csv', 'export:excel'] },

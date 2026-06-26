@@ -1,0 +1,20 @@
+{
+  "summary_title": "Professional Engineer at BuildCo",
+  "current_or_most_recent_employer": {
+    "company": "BuildCo",
+    "title": "Professional Engineer",
+    "start_year": 2018,
+    "end_year": null
+  },
+  "all_employers": [{ "company": "BuildCo", "title": "Professional Engineer", "start_year": 2018, "end_year": null }],
+  "education": [{ "school": "State University", "degree": "BS", "field": "Civil Engineering", "graduation_year": 2014 }],
+  "licenses_certifications": ["PE License"],
+  "skills": [],
+  "location_hints": ["Denver, CO"],
+  "associations_memberships": [],
+  "languages": ["English"],
+  "pronouns": null,
+  "years_experience": 10,
+  "contact_hints": [],
+  "parsing_confidence": "high"
+}

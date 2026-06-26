@@ -159,7 +159,7 @@ When asking an AI to implement a story:
 - [x] **Milestone 1** — Electron shell + React UI + PDF/DOCX extraction + Gemini parsing + results table
 - [x] **Milestone 2** — DuckDuckGo search
 - [x] **Milestone 3** — LinkedIn authenticated scraping
-- [ ] **Milestone 4** — Public records APIs
+- [x] **Milestone 4** — Public records APIs
 - [x] **Milestone 5** — SQLite persistence
 - [ ] **Milestone 6** — Export (CSV + Excel)
 - [x] **Milestone 7** — Settings panel

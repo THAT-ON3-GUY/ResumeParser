@@ -10,11 +10,13 @@ import {
   deleteCandidate,
   clearAllCandidates,
   updateCandidateSearchResults,
-  updateCandidateLinkedInData
+  updateCandidateLinkedInData,
+  updateCandidatePublicRecords
 } from './db/database.js'
 import { readResumeText } from './parser/fileReader.js'
 import { extractResume } from './parser/aiProvider.js'
 import { searchDuckDuckGo } from './search/duckduckgo.js'
+import { checkPublicSources } from './search/publicSources.js'
 import {
   hasLinkedInSession,
   openLinkedInLogin,
@@ -69,6 +71,32 @@ async function runSearchForCandidate(candidateId, extractedFields) {
   }
 }
 
+async function runPublicRecordsForCandidate(candidateId, extractedFields) {
+  try {
+    console.log('[ipc] public records check')
+    const publicRecords = await checkPublicSources(extractedFields)
+    updateCandidatePublicRecords(candidateId, publicRecords)
+    return publicRecords
+  } catch (err) {
+    console.error('[ipc] public records failed', err.message)
+    const empty = {
+      sourcesChecked: [],
+      results: {},
+      notes: [],
+      checkedAt: new Date().toISOString(),
+      error: err.message
+    }
+    updateCandidatePublicRecords(candidateId, empty)
+    return empty
+  }
+}
+
+async function runEnrichmentForCandidate(candidateId, extractedFields) {
+  const searchOutcome = await runSearchForCandidate(candidateId, extractedFields)
+  const publicRecords = await runPublicRecordsForCandidate(candidateId, extractedFields)
+  return { ...searchOutcome, publicRecords }
+}
+
 export function registerIpcHandlers() {
   ipcMain.handle('resume:read', async (_event, filePath) => {
     return readResumeText(filePath)
@@ -90,21 +118,23 @@ export function registerIpcHandlers() {
 
     let searchResults = null
     let linkedinData = null
+    let publicRecords = null
     if (store.get('autoSearchOnUpload', true)) {
       console.log('[ipc] resume:parse auto-search enabled')
-      const outcome = await runSearchForCandidate(dbId, parsed)
+      const outcome = await runEnrichmentForCandidate(dbId, parsed)
       searchResults = outcome.searchResults
       linkedinData = outcome.linkedinData
+      publicRecords = outcome.publicRecords
     }
 
-    return { id: dbId, fileName, charCount, parsed, searchResults, linkedinData }
+    return { id: dbId, fileName, charCount, parsed, searchResults, linkedinData, publicRecords }
   })
 
   ipcMain.handle('search:run', async (_event, candidateId) => {
     console.log('[ipc] search:run', candidateId)
     const candidate = getCandidateById(candidateId)
     if (!candidate) throw new Error(`Candidate not found: ${candidateId}`)
-    return runSearchForCandidate(candidateId, candidate.extracted_fields)
+    return runEnrichmentForCandidate(candidateId, candidate.extracted_fields)
   })
 
   ipcMain.handle('db:get-all', async () => {

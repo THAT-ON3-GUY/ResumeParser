@@ -1,4 +1,3 @@
-import { BrowserWindow } from 'electron'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import store from '../store.js'
@@ -185,7 +184,7 @@ function loadE2EFixtureHtml(mode) {
  * @param {string} profileUrl
  * @returns {Promise<{ data?: object, sessionExpired?: boolean, notFound?: boolean }>}
  */
-export async function scrapeLinkedInProfile(profileUrl) {
+export async function scrapeLinkedInProfile(profileUrl, attemptIndex = 0) {
   if (!isLinkedInProfileUrl(profileUrl)) {
     console.log('[linkedin] skip non-profile URL', profileUrl)
     return { notFound: true }
@@ -194,7 +193,13 @@ export async function scrapeLinkedInProfile(profileUrl) {
   console.log('[linkedin] scrapeLinkedInProfile', profileUrl)
 
   if (process.env.RESUME_INTEL_E2E === '1') {
-    const mode = process.env.RESUME_INTEL_E2E_LINKEDIN_FIXTURE || 'profile'
+    const attemptFixtures =
+      process.env.RESUME_INTEL_E2E_LINKEDIN_ATTEMPT_FIXTURES?.split(',').map((s) => s.trim()) ??
+      []
+    const mode =
+      attemptFixtures[attemptIndex] ||
+      process.env.RESUME_INTEL_E2E_LINKEDIN_FIXTURE ||
+      'profile'
     if (mode === 'login') return { sessionExpired: true }
     if (mode === '404') return { notFound: true }
     const html = loadE2EFixtureHtml('profile')
@@ -204,6 +209,7 @@ export async function scrapeLinkedInProfile(profileUrl) {
 
   await enforceProfileDelay()
 
+  const { BrowserWindow } = await import('electron')
   const scrapeWindow = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -258,7 +264,7 @@ export async function scrapeLinkedInForCandidate(searchResults) {
   }
 
   for (let i = 0; i < urls.length; i++) {
-    const outcome = await scrapeLinkedInProfile(urls[i])
+    const outcome = await scrapeLinkedInProfile(urls[i], i)
     if (outcome.sessionExpired) {
       clearLinkedInSession()
       return { linkedinData: null, sessionExpired: true }
@@ -275,8 +281,9 @@ export function openLinkedInLogin(parentWindow) {
     return Promise.resolve(simulateLinkedInLoginForE2E())
   }
 
-  return new Promise((resolve, reject) => {
-    const loginWindow = new BrowserWindow({
+  return import('electron').then(({ BrowserWindow }) =>
+    new Promise((resolve, reject) => {
+      const loginWindow = new BrowserWindow({
       width: 520,
       height: 760,
       title: 'Connect LinkedIn — Resume Intel',
@@ -324,7 +331,8 @@ export function openLinkedInLogin(parentWindow) {
     loginWindow.webContents.on('did-navigate-in-page', onNavigate)
 
     loginWindow.loadURL(LOGIN_URL).catch((err) => finish(false, err))
-  })
+    })
+  )
 }
 
 export function notifyLinkedInConnected(mainWindow, settings = getSettings()) {

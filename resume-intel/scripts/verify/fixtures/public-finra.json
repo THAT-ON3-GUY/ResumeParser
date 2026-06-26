@@ -1,0 +1,5 @@
+{
+  "found": true,
+  "data": [{ "_source": { "ind_firstname": "Jane", "ind_lastname": "Recruit", "ind_bc_scope": "Series 7" } }],
+  "status": "ok"
+}

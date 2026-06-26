@@ -154,3 +154,14 @@ export function updateCandidateLinkedInData(id, linkedinData) {
     .prepare('UPDATE candidates SET linkedin_data = ? WHERE id = ?')
     .run(linkedinData ? JSON.stringify(linkedinData) : null, id)
 }
+
+/**
+ * @param {number} id
+ * @param {object|null} publicRecords
+ */
+export function updateCandidatePublicRecords(id, publicRecords) {
+  console.log('[database] updateCandidatePublicRecords', id)
+  getDatabase()
+    .prepare('UPDATE candidates SET public_records = ? WHERE id = ?')
+    .run(publicRecords ? JSON.stringify(publicRecords) : null, id)
+}

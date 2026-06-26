@@ -76,7 +76,8 @@ function buildGeminiUrl(model) {
 function loadE2EFixture() {
   const fixturesDir = process.env.RESUME_INTEL_E2E_FIXTURES
   if (!fixturesDir) throw new Error('RESUME_INTEL_E2E_FIXTURES not set')
-  const raw = readFileSync(join(fixturesDir, 'gemini-response.json'), 'utf8')
+  const fileName = process.env.RESUME_INTEL_E2E_GEMINI_FIXTURE || 'gemini-response.json'
+  const raw = readFileSync(join(fixturesDir, fileName), 'utf8')
   return JSON.parse(raw)
 }
 

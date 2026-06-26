@@ -1,0 +1,20 @@
+{
+  "summary_title": "Financial Advisor at Wealth Partners",
+  "current_or_most_recent_employer": {
+    "company": "Wealth Partners",
+    "title": "Financial Advisor",
+    "start_year": 2019,
+    "end_year": null
+  },
+  "all_employers": [{ "company": "Wealth Partners", "title": "Financial Advisor", "start_year": 2019, "end_year": null }],
+  "education": [{ "school": "Business College", "degree": "BS", "field": "Finance", "graduation_year": 2015 }],
+  "licenses_certifications": ["Series 7", "Series 63"],
+  "skills": [],
+  "location_hints": ["New York, NY"],
+  "associations_memberships": [],
+  "languages": ["English"],
+  "pronouns": null,
+  "years_experience": 8,
+  "contact_hints": [],
+  "parsing_confidence": "high"
+}
