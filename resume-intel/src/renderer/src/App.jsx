@@ -103,12 +103,10 @@ export default function App() {
     try {
       patchRow({ status: UPLOAD_STATUS.QUEUED, error: null, lowTextWarning: null })
       patchRow({ status: UPLOAD_STATUS.EXTRACTING })
-      console.log('[App] extracting', item.fileName)
       const { charCount } = await window.electron.readResume(item.filePath)
       const lowTextWarning = charCount < LOW_TEXT_THRESHOLD ? LOW_TEXT_WARNING : null
 
       patchRow({ status: UPLOAD_STATUS.PARSING, lowTextWarning })
-      console.log('[App] parsing', item.fileName)
       const result = await window.electron.parseResume(item.filePath)
 
       patchRow({

@@ -59,7 +59,7 @@ export function repairTruncatedJson(text) {
   return repaired
 }
 
-function parseGeminiJson(raw) {
+export function parseGeminiJson(raw) {
   const cleaned = raw.replace(/```json|```/g, '').trim()
   try {
     return JSON.parse(cleaned)

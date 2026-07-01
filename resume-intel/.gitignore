@@ -1,7 +1,14 @@
-node_modules
+node_modules/
+dist/
+out/
+release/
 .env
-out
-dist
+*.log
+.DS_Store
 dist-electron
 *.local
-.DS_Store
+test-results/
+playwright-report/
+
+# electron-store user data (local dev)
+config.json

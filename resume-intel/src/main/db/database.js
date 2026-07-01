@@ -61,18 +61,31 @@ function rowToRecord(row) {
   }
 }
 
-export function initDatabase() {
-  if (db) return db
+export function initDatabaseAtPath(dbPath) {
+  if (db) {
+    db.close()
+    db = null
+  }
 
-  const dbPath = join(app.getPath('userData'), 'resume-intel.db')
   console.log('[database] Opening SQLite at', dbPath)
-
   db = new Database(dbPath)
   db.pragma('journal_mode = WAL')
   db.exec(CREATE_TABLE_SQL)
-
   console.log('[database] Schema ready')
   return db
+}
+
+export function closeDatabase() {
+  if (db) {
+    db.close()
+    db = null
+  }
+}
+
+export function initDatabase() {
+  if (db) return db
+  const dbPath = join(app.getPath('userData'), 'resume-intel.db')
+  return initDatabaseAtPath(dbPath)
 }
 
 export function getDatabase() {

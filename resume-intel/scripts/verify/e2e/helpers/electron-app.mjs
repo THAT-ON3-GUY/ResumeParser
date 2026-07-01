@@ -1,8 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { _electron as electron, expect } from '@playwright/test'
+
+import { _electron as electron } from '@playwright/test'
+
+import { setupNetworkMocks } from './network-mocks.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 export const PROJECT_ROOT = join(__dirname, '../../../..')
@@ -10,7 +13,7 @@ export const FIXTURES_DIR = join(PROJECT_ROOT, 'scripts/verify/fixtures')
 
 const DEFAULT_STORE = {
   aiProvider: 'gemini',
-  geminiApiKey: 'e2e-test-key',
+  geminiApiKey: process.env.TEST_GEMINI_KEY || 'e2e-test-key',
   geminiModel: 'gemini-2.5-flash',
   claudeApiKey: '',
   googleSearchApiKey: '',
@@ -84,6 +87,7 @@ export async function launchApp(userDataDir, options = {}) {
 
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await setupNetworkMocks(page)
   return app
 }
 

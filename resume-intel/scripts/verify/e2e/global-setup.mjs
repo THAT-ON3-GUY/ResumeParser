@@ -20,4 +20,14 @@ export default async function globalSetup() {
     shell: true,
     stdio: 'inherit'
   })
+
+  console.log('[e2e] Ensuring Playwright Chromium is installed (main-process search parsing)...')
+  const browsers = spawnSync('npx playwright install chromium', {
+    cwd: root,
+    shell: true,
+    stdio: 'inherit'
+  })
+  if (browsers.status !== 0) {
+    throw new Error('playwright install chromium failed before E2E tests')
+  }
 }

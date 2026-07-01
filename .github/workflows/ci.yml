@@ -1,0 +1,245 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: resume-intel
+
+jobs:
+  quality:
+    name: Build, Lint, Unit & E2E Tests
+    runs-on: ubuntu-latest
+    env:
+      TEST_GEMINI_KEY: ci-test-gemini-key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: resume-intel/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('resume-intel/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Rebuild SQLite for Node.js unit tests
+        run: npm rebuild better-sqlite3
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Rebuild SQLite for Electron E2E
+        run: npx electron-rebuild -f -w better-sqlite3
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install chromium
+
+      - name: Install Playwright browser dependencies
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E tests
+        run: xvfb-run --auto-servernum npm run test:e2e
+        env:
+          TEST_GEMINI_KEY: ${{ env.TEST_GEMINI_KEY }}
+
+  package-windows:
+    name: Package Windows Installer
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: resume-intel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: resume-intel/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('resume-intel/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read package version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build Windows installer
+        run: npm run build:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Zip Windows installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $installer = Get-ChildItem -Path release -Filter *.exe | Select-Object -First 1
+          if (-not $installer) { throw "No Windows installer found in release/" }
+          Compress-Archive -Path $installer.FullName -DestinationPath "resume-intel-windows-$version.zip" -Force
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-intel-windows-${{ steps.version.outputs.version }}
+          path: resume-intel/resume-intel-windows-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  package-macos:
+    name: Package macOS Installer
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: resume-intel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: resume-intel/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('resume-intel/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read package version
+        id: version
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build macOS installer
+        run: npm run build:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Zip macOS installer
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          dmg=$(find release -name '*.dmg' | head -n 1)
+          if [ -z "$dmg" ]; then echo "No macOS .dmg found in release/"; exit 1; fi
+          zip "resume-intel-mac-${version}.zip" "$dmg"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-intel-mac-${{ steps.version.outputs.version }}
+          path: resume-intel/resume-intel-mac-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: [quality, package-windows, package-macos]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read package version
+        id: version
+        working-directory: resume-intel
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: resume-intel-windows-${{ steps.version.outputs.version }}
+          path: artifacts
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: resume-intel-mac-${{ steps.version.outputs.version }}
+          path: artifacts
+
+      - name: Build release notes from feature stories
+        working-directory: resume-intel
+        run: |
+          {
+            echo "# Resume Intel v${{ steps.version.outputs.version }}"
+            echo
+            echo "## Feature stories"
+            echo
+            find docs/features -type f -name '*.md' | sort | while read -r file; do
+              echo "- \`${file}\`"
+            done
+          } > "$GITHUB_WORKSPACE/release-notes.md"
+
+      - name: Check if release tag already exists
+        id: tag_check
+        run: |
+          tag="v${{ steps.version.outputs.version }}-${{ github.run_number }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $tag already exists — skipping create"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: Resume Intel v${{ steps.version.outputs.version }} (build ${{ github.run_number }})
+          body_path: release-notes.md
+          files: |
+            artifacts/resume-intel-windows-${{ steps.version.outputs.version }}.zip
+            artifacts/resume-intel-mac-${{ steps.version.outputs.version }}.zip
+          fail_on_unmatched_files: false
+          generate_release_notes: false
+          make_latest: true

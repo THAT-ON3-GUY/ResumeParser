@@ -1,11 +1,14 @@
-# Resume Intel (Milestone 1)
+![CI](https://github.com/THAT-ON3-GUY/resume-intel/actions/workflows/ci.yml/badge.svg)
+# Resume Intel
 
-Electron + React + Vite app: drag PDF/DOCX resumes, extract text, call **Google Gemini** (`gemini-2.5-flash` by default), show structured fields in a table.
+[![CI](https://github.com/THAT-ON3-GUY/ResumeParser/actions/workflows/ci.yml/badge.svg)](https://github.com/THAT-ON3-GUY/ResumeParser/actions/workflows/ci.yml)
+
+Electron + React desktop app for recruiters: upload PDF/DOCX resumes, extract structured fields with **Google Gemini**, enrich candidates via DuckDuckGo, LinkedIn, and public records, and persist results in a local SQLite database.
 
 ## Prerequisites
 
 - Node.js 20+ and npm
-- A Gemini API key ([Google AI Studio](https://aistudio.google.com))
+- A [Google Gemini API key](https://aistudio.google.com/apikey) (free tier available)
 
 ## Setup
 
@@ -14,39 +17,81 @@ cd resume-intel
 npm install
 ```
 
-## Run (development)
-
-Create a **`.env`** file in the `resume-intel` folder (same level as `package.json`):
+Create a `.env` file in `resume-intel/` (gitignored):
 
 ```env
 GEMINI_API_KEY=your-key-here
 ```
 
-`.env` is gitignored. On startup the main process loads it with **dotenv** before copying the key into `electron-store`.
+On startup the main process loads `.env` with dotenv and copies the key into `electron-store`. You can also set `GEMINI_API_KEY` in your shell instead.
 
-Then:
+## Development
 
-```powershell
+```bash
 npm run dev
 ```
 
-You can still set `GEMINI_API_KEY` in the shell if you prefer; real environment variables are not overwritten by dotenv’s defaults.
+Drag PDF or DOCX files into the app, or use the upload controls in the sidebar/top bar.
 
-## Optional: model override
+## Tests
 
-Default model is `gemini-2.5-flash`. To try another model, set before first Gemini call (e.g. temporary code) or extend store — `store` key `geminiModel` is read by the parser.
+```bash
+# Unit tests (Vitest). If you see a better-sqlite3 NODE_MODULE_VERSION error, run:
+# npm rebuild better-sqlite3
+npm run test
+
+# End-to-end tests (Playwright + Electron, headless)
+# Uses TEST_GEMINI_KEY and fixture mocks — no live API calls
+# First run downloads Chromium via Playwright (used by main-process search parsing)
+npm run test:e2e
+
+# Lint
+npm run lint
+```
+
+E2E tests seed `electron-store` with `TEST_GEMINI_KEY` (defaults to a placeholder when unset) and mock Gemini/DuckDuckGo via `RESUME_INTEL_E2E=1` plus Playwright network interception using fixtures in `scripts/verify/fixtures/`.
+
+## Build
+
+```bash
+# Compile the app (required before E2E or packaging)
+npm run build
+
+# Platform installers (requires electron-builder)
+npm run build:win   # Windows NSIS .exe
+npm run build:mac   # macOS .dmg
+```
+
+Installers are written to `release/`. CI builds and publishes zipped installers on every push to `main`.
 
 ## Project layout
 
-- `src/main/` — Electron main, IPC, parsing, Gemini
-- `src/preload/` — `contextBridge` exposes **`window.electron`** (`webUtils.getPathForFile`, `readResume`, `parseResume`)
-- `src/renderer/` — React UI
+| Path | Purpose |
+|------|---------|
+| `src/main/` | Electron main process, IPC, parsing, search, SQLite |
+| `src/preload/` | `contextBridge` → `window.electron` |
+| `src/renderer/` | React UI |
+| `docs/features/` | Feature story specs |
+| `scripts/verify/` | Feature verification and E2E tests |
+| `tests/unit/` | Vitest unit tests |
 
-## Milestone 1 scope
+## Branch protection (recommended)
 
-- Scaffold + upload + PDF/DOCX text extraction + Gemini JSON extraction + results table  
-- **Not included:** web search, LinkedIn, SQLite, export, Claude, Settings panel
+Configure these rules on the `main` branch in GitHub **Settings → Branches → Branch protection rules**:
 
-## PDF parsing (pdf-parse v2)
+1. **Require a pull request before merging** — enable required approvals (at least 1 reviewer).
+2. **Require status checks to pass before merging** — select the CI job **Build, Lint, Unit & E2E Tests**.
+3. **Do not allow bypassing the above settings** (including for admins, if your team policy requires it).
+4. **Restrict who can push to matching branches** — block direct pushes to `main`; all changes should go through PRs.
 
-This project uses **pdf-parse v2**, which uses a `PDFParse` class and a bundled worker. `src/main/parser/fileReader.js` imports `pdf-parse/worker` first (per upstream docs) to reduce “fake worker” / path issues in Electron. If PDF extraction still fails, see [pdf-parse troubleshooting](https://github.com/mehmet-kozan/pdf-parse/blob/HEAD/docs/troubleshooting.md) (worker path / `CanvasFactory`).
+## Gemini API key
+
+1. Sign in to [Google AI Studio](https://aistudio.google.com).
+2. Open **Get API key** and create a key for your Google Cloud project.
+3. Paste the key into `.env` as `GEMINI_API_KEY` or enter it in the in-app Settings panel.
+
+Default model is `gemini-2.5-flash` (configurable in Settings via `geminiModel` in the store).
+
+## CI/CD
+
+Every pull request and push to `main` runs build, lint, unit tests, and E2E tests on Ubuntu. Pushes to `main` also build Windows and macOS installers, upload artifacts, and create a GitHub Release tagged `v{version}` with release notes listing feature stories in `docs/features/`.
