@@ -9,7 +9,11 @@ export const ROOT = join(__dirname, '../..')
 /** @type {Record<string, { files: string[], ipc?: string[] }>} */
 export const FEATURE_MAP = {
   '1.1': {
-    files: ['src/main/parser/fileReader.js', 'src/renderer/src/components/UploadZone.jsx'],
+    files: [
+      'src/main/parser/fileReader.js',
+      'src/renderer/src/lib/uploadStatus.js',
+      'src/renderer/src/components/ResultsTable.jsx'
+    ],
     ipc: ['resume:read', 'resume:parse']
   },
   '2.1': {

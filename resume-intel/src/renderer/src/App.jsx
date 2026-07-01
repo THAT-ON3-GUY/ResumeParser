@@ -7,6 +7,12 @@ import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import StatusBar from './components/StatusBar.jsx'
 import { candidateRecordToRow } from './lib/dbRows.js'
+import {
+  UPLOAD_STATUS,
+  LOW_TEXT_WARNING,
+  LOW_TEXT_THRESHOLD,
+  isProcessingStatus
+} from './lib/uploadStatus.js'
 
 export default function App() {
   const [view, setView] = useState('candidates')
@@ -81,7 +87,7 @@ export default function App() {
     return rows
   }, [rows, filters.mode])
 
-  const processingCount = rows.filter((r) => r.status === 'parsing').length
+  const processingCount = rows.filter((r) => isProcessingStatus(r.status)).length
 
   const linkedInMatchCount = rows.filter((r) => r.linkedinData).length
 
@@ -89,87 +95,116 @@ export default function App() {
     uploadInputRef.current?.click()
   }, [])
 
-  const handleFilesSelected = useCallback(async (files) => {
-    const all = Array.from(files ?? [])
-    const list = all.filter((f) => {
-      const n = f.name.toLowerCase()
-      return n.endsWith('.pdf') || n.endsWith('.docx')
-    })
-
-    if (list.length === 0) {
-      if (all.length > 0) {
-        setUploadRejection('Unsupported file type')
-      }
-      return
+  const processOneFile = useCallback(async (item) => {
+    const patchRow = (patch) => {
+      setRows((prev) => prev.map((row) => (row.id === item.id ? { ...row, ...patch } : row)))
     }
 
-    setUploadRejection(null)
-    setView('candidates')
+    try {
+      patchRow({ status: UPLOAD_STATUS.QUEUED, error: null, lowTextWarning: null })
+      patchRow({ status: UPLOAD_STATUS.EXTRACTING })
+      console.log('[App] extracting', item.fileName)
+      const { charCount } = await window.electron.readResume(item.filePath)
+      const lowTextWarning = charCount < LOW_TEXT_THRESHOLD ? LOW_TEXT_WARNING : null
 
-    const pending = list.map((file) => ({
-      id: crypto.randomUUID(),
-      fileName: file.name,
-      filePath: window.electron.webUtils.getPathForFile(file),
-      status: 'parsing',
-      parsed: null,
-      error: null,
-      dbId: null
-    }))
+      patchRow({ status: UPLOAD_STATUS.PARSING, lowTextWarning })
+      console.log('[App] parsing', item.fileName)
+      const result = await window.electron.parseResume(item.filePath)
 
-    setProcessingTotal(pending.length)
-
-    setRows((prev) => [
-      ...prev,
-      ...pending.map(({ id, fileName, status, parsed, error, dbId }) => ({
-        id,
-        fileName,
-        status,
-        parsed,
-        error,
-        dbId
-      }))
-    ])
-
-    for (const item of pending) {
-      try {
-        const currentSettings = await window.electron.getSettings()
-        setSettings(currentSettings)
-        setSearchStatus(
-          currentSettings.linkedinConnected
-            ? 'Parsing resume & checking LinkedIn…'
-            : 'Parsing resume & searching…'
-        )
-        const result = await window.electron.parseResume(item.filePath)
-        setRows((prev) =>
-          prev.map((row) =>
-            row.id === item.id
-              ? {
-                  ...row,
-                  id: String(result.id),
-                  dbId: result.id,
-                  status: 'done',
-                  parsed: result.parsed,
-                  searchResults: result.searchResults ?? null,
-                  linkedinData: result.linkedinData ?? null,
-                  publicRecords: result.publicRecords ?? null,
-                  error: null
-                }
-              : row
-          )
-        )
-      } catch (err) {
-        const message = err?.message ?? String(err)
-        setRows((prev) =>
-          prev.map((row) =>
-            row.id === item.id ? { ...row, status: 'error', error: message, parsed: null } : row
-          )
-        )
-      }
+      patchRow({
+        id: String(result.id),
+        dbId: result.id,
+        status: UPLOAD_STATUS.DONE,
+        parsed: result.parsed,
+        searchResults: result.searchResults ?? null,
+        linkedinData: result.linkedinData ?? null,
+        publicRecords: result.publicRecords ?? null,
+        lowTextWarning,
+        error: null
+      })
+    } catch (err) {
+      const message = err?.message ?? String(err)
+      console.error('[App] upload failed', item.fileName, message)
+      patchRow({ status: UPLOAD_STATUS.ERROR, error: message, parsed: null })
     }
-
-    setSearchStatus(null)
-    setProcessingTotal(0)
   }, [])
+
+  const handleFilesSelected = useCallback(
+    async (files) => {
+      const all = Array.from(files ?? [])
+      const list = all.filter((f) => {
+        const n = f.name.toLowerCase()
+        return n.endsWith('.pdf') || n.endsWith('.docx')
+      })
+
+      if (list.length === 0) {
+        if (all.length > 0) {
+          setUploadRejection('Unsupported file type')
+        }
+        return
+      }
+
+      setUploadRejection(null)
+      setView('candidates')
+
+      const pending = list.map((file) => ({
+        id: crypto.randomUUID(),
+        fileName: file.name,
+        filePath: window.electron.webUtils.getPathForFile(file),
+        status: UPLOAD_STATUS.QUEUED,
+        parsed: null,
+        error: null,
+        dbId: null,
+        lowTextWarning: null
+      }))
+
+      setProcessingTotal(pending.length)
+
+      setRows((prev) => [
+        ...prev,
+        ...pending.map(({ id, fileName, filePath, status, parsed, error, dbId, lowTextWarning }) => ({
+          id,
+          fileName,
+          filePath,
+          status,
+          parsed,
+          error,
+          dbId,
+          lowTextWarning
+        }))
+      ])
+
+      const currentSettings = await window.electron.getSettings()
+      setSettings(currentSettings)
+      setSearchStatus(
+        currentSettings.linkedinConnected
+          ? 'Parsing resume & checking LinkedIn…'
+          : 'Parsing resume & searching…'
+      )
+
+      for (const item of pending) {
+        await processOneFile(item)
+      }
+
+      setSearchStatus(null)
+      setProcessingTotal(0)
+    },
+    [processOneFile]
+  )
+
+  const handleRetryRow = useCallback(
+    async (row) => {
+      if (!row.filePath) return
+      setSearchStatus('Retrying failed upload…')
+      await processOneFile({
+        id: row.id,
+        fileName: row.fileName,
+        filePath: row.filePath
+      })
+      setSearchStatus(null)
+    },
+    [processOneFile]
+  )
 
   const handleUploadInputChange = (e) => {
     const files = e.target.files
@@ -361,6 +396,7 @@ export default function App() {
               onOpenDetail={setDetailRowId}
               onDeleteRow={handleDeleteRow}
               onRerunSearch={handleRerunSearch}
+              onRetryRow={handleRetryRow}
               searchQuery={searchQuery}
             />
 
@@ -373,7 +409,7 @@ export default function App() {
           </div>
         )}
 
-        {detailRow?.status === 'done' && detailRow.parsed ? (
+        {detailRow?.status === UPLOAD_STATUS.DONE && detailRow.parsed ? (
           <CandidateDetailDrawer row={detailRow} onClose={() => setDetailRowId(null)} />
         ) : null}
       </main>

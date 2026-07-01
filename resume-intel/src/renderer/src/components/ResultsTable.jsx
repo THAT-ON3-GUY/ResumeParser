@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getCurrentEmployer } from '../lib/parsedResume.js'
 import { ConfidenceBadge, LinkedInBadge, LicenseBadge } from './Badges.jsx'
+import { UPLOAD_STATUS, uploadStatusLabel, isProcessingStatus } from '../lib/uploadStatus.js'
 
 const COLUMNS = [
   { key: 'fileName', label: 'File name' },
@@ -31,9 +32,7 @@ function firstLicense(licenses) {
 }
 
 function rowStatusLabel(row) {
-  if (row.status === 'parsing') return 'Parsing…'
-  if (row.status === 'error') return `Error: ${row.error}`
-  return 'Done'
+  return uploadStatusLabel(row)
 }
 
 function sortValue(row, key) {
@@ -65,6 +64,7 @@ export default function ResultsTable({
   onOpenDetail,
   onDeleteRow,
   onRerunSearch,
+  onRetryRow,
   searchQuery
 }) {
   const [sortKey, setSortKey] = useState('fileName')
@@ -177,13 +177,13 @@ export default function ResultsTable({
             const cur = p ? getCurrentEmployer(p) : null
             const selected = selectedIds.has(row.id)
             const linkedInFound = Boolean(row.linkedinData)
-            const license = row.status === 'done' ? firstLicense(p?.licenses_certifications) : null
+            const license = row.status === UPLOAD_STATUS.DONE ? firstLicense(p?.licenses_certifications) : null
 
             return (
               <tr
                 key={row.id}
                 className={selected ? 'row-selected' : ''}
-                onClick={() => row.status === 'done' && p && onOpenDetail?.(row.id)}
+                onClick={() => row.status === UPLOAD_STATUS.DONE && p && onOpenDetail?.(row.id)}
                 data-testid="result-row"
               >
                 <td onClick={(e) => e.stopPropagation()}>
@@ -196,38 +196,48 @@ export default function ResultsTable({
                   />
                 </td>
                 <td className="td-filename" title={row.fileName}>
-                  {row.fileName}
+                  <span>{row.fileName}</span>
+                  {row.lowTextWarning ? (
+                    <span
+                      className="badge badge-medium"
+                      style={{ marginLeft: 6 }}
+                      data-testid="upload-warning"
+                      title={row.lowTextWarning}
+                    >
+                      Scanned?
+                    </span>
+                  ) : null}
                 </td>
                 <td className="td-muted">
-                  {row.status === 'done' ? cur?.title || '—' : '…'}
+                  {row.status === UPLOAD_STATUS.DONE ? cur?.title || '—' : '…'}
                 </td>
                 <td className="td-muted">
-                  {row.status === 'done' ? cur?.company || '—' : '…'}
+                  {row.status === UPLOAD_STATUS.DONE ? cur?.company || '—' : '…'}
                 </td>
                 <td className="td-muted">
-                  {row.status === 'done' ? educationSummary(p?.education) : '…'}
+                  {row.status === UPLOAD_STATUS.DONE ? educationSummary(p?.education) : '…'}
                 </td>
                 <td>
-                  {row.status === 'done' ? (
+                  {row.status === UPLOAD_STATUS.DONE ? (
                     <LicenseBadge license={license} testId={`badge-license-${row.id}`} />
                   ) : (
                     '…'
                   )}
                 </td>
                 <td className="td-muted">
-                  {row.status === 'done' ? (p?.years_experience ?? '—') : '…'}
+                  {row.status === UPLOAD_STATUS.DONE ? (p?.years_experience ?? '—') : '…'}
                 </td>
                 <td>
-                  {row.status === 'done' ? (
+                  {row.status === UPLOAD_STATUS.DONE ? (
                     <LinkedInBadge found={linkedInFound} testId={`badge-linkedin-${row.id}`} />
                   ) : (
                     '…'
                   )}
                 </td>
                 <td>
-                  {row.status === 'done' && p?.parsing_confidence ? (
+                  {row.status === UPLOAD_STATUS.DONE && p?.parsing_confidence ? (
                     <ConfidenceBadge score={p.parsing_confidence} testId={`badge-confidence-${row.id}`} />
-                  ) : row.status === 'done' ? (
+                  ) : row.status === UPLOAD_STATUS.DONE ? (
                     <ConfidenceBadge score="low" testId={`badge-confidence-${row.id}`} />
                   ) : (
                     '…'
@@ -235,7 +245,7 @@ export default function ResultsTable({
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <div className="row-actions">
-                    {row.status === 'done' && p ? (
+                    {row.status === UPLOAD_STATUS.DONE && p ? (
                       <button
                         type="button"
                         className="icon-btn"
@@ -246,7 +256,18 @@ export default function ResultsTable({
                         <i className="ti ti-eye" aria-hidden="true" />
                       </button>
                     ) : null}
-                    {row.dbId != null ? (
+                    {row.status === UPLOAD_STATUS.ERROR && row.filePath ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Retry upload"
+                        onClick={() => onRetryRow?.(row)}
+                        data-testid="row-retry"
+                      >
+                        <i className="ti ti-refresh" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    {row.dbId != null && row.status === UPLOAD_STATUS.DONE ? (
                       <button
                         type="button"
                         className="icon-btn"
@@ -257,7 +278,7 @@ export default function ResultsTable({
                         <i className="ti ti-refresh" aria-hidden="true" />
                       </button>
                     ) : null}
-                    {row.status !== 'parsing' ? (
+                    {!isProcessingStatus(row.status) ? (
                       <button
                         type="button"
                         className="icon-btn"

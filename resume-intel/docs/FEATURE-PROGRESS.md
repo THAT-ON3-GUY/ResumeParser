@@ -11,7 +11,7 @@ npm run mark-done -- --feature 9.1
 
 | ID | Feature | Status | Static verify | E2E |
 |----|---------|--------|---------------|-----|
-| 1.1 | File Upload & Extraction | PARTIAL | yes | yes |
+| 1.1 | File Upload & Extraction | DONE | yes | yes |
 | 2.1 | Gemini Extraction | PARTIAL | yes | yes |
 | 2.2 | Claude Fallback | MISSING | — | — |
 | 2.3 | AI Summarization | MISSING | — | — |

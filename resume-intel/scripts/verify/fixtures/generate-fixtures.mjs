@@ -36,6 +36,32 @@ function writePdf() {
   writeFileSync(join(OUT, 'sample-resume.pdf'), body)
 }
 
+function writeMinimalScannedPdf() {
+  const text = 'scan'
+  const stream = `BT /F1 12 Tf 72 720 Td (${text}) Tj ET`
+  const objects = [
+    '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj',
+    '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj',
+    '3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj',
+    `4 0 obj<</Length ${stream.length}>>stream\n${stream}\nendstream\nendobj`,
+    '5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj'
+  ]
+  let body = '%PDF-1.4\n'
+  const offsets = [0]
+  for (const obj of objects) {
+    offsets.push(body.length)
+    body += obj + '\n'
+  }
+  const xrefStart = body.length
+  body += `xref\n0 ${objects.length + 1}\n`
+  body += '0000000000 65535 f \n'
+  for (let i = 1; i <= objects.length; i++) {
+    body += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`
+  }
+  body += `trailer<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${xrefStart}\n%%EOF`
+  writeFileSync(join(OUT, 'minimal-scanned.pdf'), body)
+}
+
 async function writeDocx() {
   const zip = new JSZip()
   zip.file(
@@ -138,8 +164,9 @@ function writeLinkedInHtml() {
 
 mkdirSync(OUT, { recursive: true })
 writePdf()
+writeMinimalScannedPdf()
 await writeDocx()
 writeGeminiResponse()
 writeDdgHtml()
 writeLinkedInHtml()
-console.log('[fixtures] Wrote sample-resume.pdf, sample-resume.docx, gemini-response.json, ddg-results.html, linkedin-profile.html, linkedin-profile-404.html, linkedin-login.html')
+console.log('[fixtures] Wrote sample-resume.pdf, minimal-scanned.pdf, sample-resume.docx, gemini-response.json, ddg-results.html, linkedin-profile.html, linkedin-profile-404.html, linkedin-login.html')

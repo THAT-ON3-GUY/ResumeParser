@@ -59,9 +59,14 @@ test.describe(`${FEATURE} — File Upload & Text Extraction`, () => {
     })
   })
 
-  test('AC-5: minimal PDF content still completes extraction', async () => {
+  test('AC-5: minimal PDF shows scanned-file warning after extraction', async () => {
     await withFreshApp({}, async ({ page }) => {
-      await uploadAndParse(page, FIXTURES_DIR, 'sample-resume.pdf')
+      await uploadAndParse(page, FIXTURES_DIR, 'minimal-scanned.pdf')
+      await expect(page.getByTestId('upload-warning')).toBeVisible()
+      await expect(page.getByTestId('upload-warning')).toHaveAttribute(
+        'title',
+        'File may be scanned — text extraction returned minimal content.'
+      )
       await expect(page.getByTestId('result-status').filter({ hasText: 'Done' })).toHaveCount(1)
     })
   })
