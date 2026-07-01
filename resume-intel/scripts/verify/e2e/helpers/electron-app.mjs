@@ -159,7 +159,14 @@ export async function withFreshApp(overrides, fn, options = {}) {
   const userDataDir = seedStore(overrides)
   const app = await launchApp(userDataDir, options)
   const page = await app.firstWindow()
-  await page.waitForSelector('[data-testid="candidates-view"]')
+  const waitFor = options.waitForView ?? 'candidates'
+  if (waitFor === 'settings') {
+    await page.waitForSelector('[data-testid="settings-view"]')
+  } else if (waitFor === 'any') {
+    await page.waitForSelector('[data-testid="candidates-view"], [data-testid="settings-view"]')
+  } else {
+    await page.waitForSelector('[data-testid="candidates-view"]')
+  }
   acceptConfirmDialogs(page)
   try {
     await fn({ app, page, userDataDir })

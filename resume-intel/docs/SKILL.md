@@ -163,4 +163,4 @@ When asking an AI to implement a story:
 - [x] **Milestone 5** — SQLite persistence
 - [x] **Milestone 6** — Export (CSV + Excel)
 - [x] **Milestone 7** — Settings panel
-- [ ] **Milestone 8** — Packaging + installer
+- [x] **Milestone 8** — Packaging + installer

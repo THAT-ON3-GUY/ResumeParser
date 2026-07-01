@@ -2,6 +2,7 @@ node_modules/
 dist/
 out/
 release/
+resources/browsers/
 .env
 *.log
 .DS_Store

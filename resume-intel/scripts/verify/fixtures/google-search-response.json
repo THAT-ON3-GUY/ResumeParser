@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "title": "Jane Recruit - Senior Engineer | LinkedIn",
+      "link": "https://www.linkedin.com/in/jane-recruit-google",
+      "snippet": "Senior Engineer at Acme Corp. Auburn University graduate."
+    },
+    {
+      "title": "Acme Corp Careers",
+      "link": "https://example.com/careers",
+      "snippet": "Join our engineering team."
+    }
+  ]
+}

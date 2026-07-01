@@ -18,6 +18,7 @@ import { exportCandidateRowCsv, exportCandidatesCsv, exportCandidatesExcel } fro
 import { readResumeText } from './parser/fileReader.js'
 import { extractResume, summarizeFindings } from './parser/aiProvider.js'
 import { searchDuckDuckGo } from './search/duckduckgo.js'
+import { searchGoogle } from './search/googleSearch.js'
 import { checkPublicSources } from './search/publicSources.js'
 import {
   hasLinkedInSession,
@@ -36,7 +37,14 @@ function getMainWindow() {
 
 async function runSearchForCandidate(candidateId, extractedFields) {
   try {
-    const searchResults = await searchDuckDuckGo(extractedFields)
+    let searchResults = await searchDuckDuckGo(extractedFields)
+    if (!searchResults.results?.length) {
+      console.log('[ipc] search: DDG empty — trying Google fallback')
+      const googleResults = await searchGoogle(extractedFields)
+      if (googleResults) {
+        searchResults = googleResults
+      }
+    }
     const linkedinHits = searchResults.results?.filter((r) => r.isLinkedIn) ?? []
     let linkedinData = null
 

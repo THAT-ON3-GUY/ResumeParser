@@ -22,6 +22,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [filters, setFilters] = useState({ mode: 'all' })
   const [settings, setSettings] = useState(null)
+  const [welcomeSetup, setWelcomeSetup] = useState(false)
   const [processingTotal, setProcessingTotal] = useState(0)
   const uploadInputRef = useRef(null)
 
@@ -51,6 +52,19 @@ export default function App() {
       cancelled = true
     }
   }, [loadCandidates])
+
+  useEffect(() => {
+    if (loadingDb || !settings) return
+    const provider = settings.aiProvider ?? 'gemini'
+    const needsGeminiKey = provider === 'gemini' && !String(settings.geminiApiKey ?? '').trim()
+    if (needsGeminiKey) {
+      console.log('[App] first launch — no Gemini API key, opening Settings')
+      setWelcomeSetup(true)
+      setView('settings')
+    } else {
+      setWelcomeSetup(false)
+    }
+  }, [settings, loadingDb])
 
   useEffect(() => {
     const unsub = window.electron.onLinkedInSessionExpired?.(() => {
@@ -353,7 +367,11 @@ export default function App() {
         {view === 'settings' ? (
           <div className="main-scroll" data-testid="settings-view">
             <Topbar title="Settings" searchQuery="" onSearchChange={() => {}} onUploadClick={openUploadDialog} />
-            <SettingsPanel onClearAllData={handleClearAllData} onBack={() => setView('candidates')} />
+            <SettingsPanel
+              onClearAllData={handleClearAllData}
+              onBack={() => setView('candidates')}
+              showWelcomeBanner={welcomeSetup}
+            />
             <StatusBar
               candidateCount={rows.length}
               linkedInCount={linkedInMatchCount}

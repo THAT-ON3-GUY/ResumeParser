@@ -12,8 +12,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
+    "stage:browsers": "node scripts/stage-playwright-browsers.mjs",
+    "build:win": "npm run build && npm run stage:browsers && electron-builder --win",
+    "build:mac": "npm run build && npm run stage:browsers && electron-builder --mac",
+    "dist": "npm run build && npm run stage:browsers && electron-builder --win --mac",
     "verify": "node scripts/verify.mjs",
     "mark-done": "node scripts/mark-feature-done.mjs",
     "postinstall": "electron-rebuild -f -w better-sqlite3"
@@ -57,6 +59,16 @@
       "out/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/browsers",
+        "to": "browsers",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
       "target": [
         "nsis"
@@ -72,7 +84,15 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
     }
   }
 }

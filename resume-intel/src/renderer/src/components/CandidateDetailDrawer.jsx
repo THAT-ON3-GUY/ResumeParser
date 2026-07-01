@@ -243,6 +243,11 @@ export default function CandidateDetailDrawer({ row, onClose }) {
           </Section>
 
           <Section title="Search results">
+            {row.searchResults?.source ? (
+              <p style={{ margin: '0 0 8px', fontSize: 11, color: 'var(--text-muted)' }} data-testid="search-source">
+                Source: {row.searchResults.source}
+              </p>
+            ) : null}
             {row.searchResults?.results?.length ? (
               <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', fontSize: 12 }} data-testid="search-results-list">
                 {row.searchResults.results.map((hit, i) => (

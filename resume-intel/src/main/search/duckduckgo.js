@@ -1,9 +1,12 @@
-import { chromium } from 'playwright'
+import { launchChromium } from '../browser/playwrightLaunch.js'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { buildQuery, flagLinkedIn } from './searchQuery.js'
+
+export { buildQuery } from './searchQuery.js'
 
 /** @typedef {{ title: string, snippet: string, url: string, isLinkedIn: boolean }} DDGResultItem */
-/** @typedef {{ query: string, results: DDGResultItem[], searchedAt: string }} DDGSearchResult */
+/** @typedef {{ query: string, results: DDGResultItem[], searchedAt: string, source?: string }} DDGSearchResult */
 
 let lastSearchFinishedAt = 0
 
@@ -12,40 +15,11 @@ function sleep(ms) {
 }
 
 /**
- * @param {object|null} extractedFields
- * @param {{ linkedInOnly?: boolean }} options
- */
-export function buildQuery(extractedFields, { linkedInOnly = true } = {}) {
-  const parts = []
-  const employer =
-    extractedFields?.current_or_most_recent_employer?.company ??
-    extractedFields?.all_employers?.[0]?.company ??
-    extractedFields?.previous_employers?.[0]?.company
-
-  if (employer) parts.push(`"${employer}"`)
-
-  const edu = extractedFields?.education?.[0]
-  if (edu?.graduation_year != null) parts.push(String(edu.graduation_year))
-  if (edu?.school) parts.push(`"${edu.school}"`)
-
-  const license = extractedFields?.licenses_certifications?.[0]?.name
-  if (license) parts.push(`"${license}"`)
-
-  if (linkedInOnly) parts.push('site:linkedin.com/in')
-
-  return parts.filter(Boolean).join(' ')
-}
-
-function flagLinkedIn(url) {
-  return /linkedin\.com\/in\//i.test(url || '')
-}
-
-/**
  * @param {string} html
  * @returns {Promise<DDGResultItem[]>}
  */
 export async function parseDdgHtml(html) {
-  const browser = await chromium.launch({ headless: true })
+  const browser = await launchChromium()
   try {
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'domcontentloaded' })
@@ -78,7 +52,8 @@ function wrapResult(query, results) {
       ...r,
       isLinkedIn: flagLinkedIn(r.url)
     })),
-    searchedAt: new Date().toISOString()
+    searchedAt: new Date().toISOString(),
+    source: 'duckduckgo'
   }
 }
 
@@ -102,7 +77,7 @@ async function fetchDdgHtml(query) {
     return readFileSync(join(fixturesDir, file), 'utf8')
   }
 
-  const browser = await chromium.launch({ headless: true })
+  const browser = await launchChromium()
   try {
     const page = await browser.newPage()
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`

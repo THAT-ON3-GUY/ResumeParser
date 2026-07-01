@@ -52,7 +52,7 @@ const blockStyle = {
   marginBottom: 12
 }
 
-export default function SettingsPanel({ onClearAllData, onBack }) {
+export default function SettingsPanel({ onClearAllData, onBack, showWelcomeBanner = false }) {
   const [settings, setSettings] = useState(null)
   const [flashKey, setFlashKey] = useState(null)
   const [error, setError] = useState(null)
@@ -120,6 +120,20 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
 
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 16 }} data-testid="settings-panel">
+      {showWelcomeBanner ? (
+        <div
+          data-testid="welcome-banner"
+          role="status"
+          style={{
+            ...blockStyle,
+            background: 'var(--badge-found-bg)',
+            color: 'var(--badge-found-text)',
+            borderColor: 'var(--badge-found-text)'
+          }}
+        >
+          Welcome to Resume Intel. Add your free Gemini API key to get started.
+        </div>
+      ) : null}
       <section style={blockStyle}>
         <div className="sidebar-section-label" style={{ padding: '0 0 8px' }}>
           AI provider

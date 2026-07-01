@@ -34,6 +34,15 @@ export const FEATURE_MAP = {
     ipc: ['resume:parse', 'search:run']
   },
   '3.1': { files: ['src/main/search/duckduckgo.js', 'src/renderer/src/components/SearchStatus.jsx'], ipc: ['search:run'] },
+  '3.2': {
+    files: [
+      'src/main/search/googleSearch.js',
+      'src/main/search/googleParse.js',
+      'src/main/search/searchQuery.js',
+      'src/renderer/src/components/CandidateDetailDrawer.jsx'
+    ],
+    ipc: ['search:run', 'resume:parse']
+  },
   '4.1': {
     files: [
       'src/main/search/linkedin.js',
@@ -71,7 +80,10 @@ export const FEATURE_MAP = {
     files: ['src/main/db/database.js'],
     ipc: ['db:get-all', 'db:delete', 'db:clear-all']
   },
-  '10.1': { files: ['package.json'], ipc: [] }
+  '10.1': {
+    files: ['package.json', 'src/main/browser/playwrightLaunch.js', 'scripts/stage-playwright-browsers.mjs'],
+    ipc: []
+  }
 }
 
 export function runBuild() {
