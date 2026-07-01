@@ -24,6 +24,7 @@ export default function App() {
   const [filters, setFilters] = useState({ mode: 'all' })
   const [settings, setSettings] = useState(null)
   const [welcomeSetup, setWelcomeSetup] = useState(false)
+  const [initialKeyGateDone, setInitialKeyGateDone] = useState(false)
   const [processingTotal, setProcessingTotal] = useState(0)
   const uploadInputRef = useRef(null)
 
@@ -55,7 +56,7 @@ export default function App() {
   }, [loadCandidates])
 
   useEffect(() => {
-    if (loadingDb || !settings) return
+    if (loadingDb || !settings || initialKeyGateDone) return
     const provider = settings.aiProvider ?? 'gemini'
     const needsGeminiKey = provider === 'gemini' && !String(settings.geminiApiKey ?? '').trim()
     if (needsGeminiKey) {
@@ -64,7 +65,8 @@ export default function App() {
     } else {
       setWelcomeSetup(false)
     }
-  }, [settings, loadingDb])
+    setInitialKeyGateDone(true)
+  }, [settings, loadingDb, initialKeyGateDone])
 
   useEffect(() => {
     const unsub = window.electron.onLinkedInSessionExpired?.(() => {

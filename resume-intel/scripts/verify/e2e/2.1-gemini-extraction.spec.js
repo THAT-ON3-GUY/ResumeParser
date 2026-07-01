@@ -50,15 +50,20 @@ test.describe(`${FEATURE} — Gemini Resume Extraction`, () => {
 
   test('AC-4: missing Gemini API key surfaces an error on parse', async () => {
     await withFreshApp(
-      { geminiApiKey: '' },
+      { geminiApiKey: '', autoSearchOnUpload: false },
       async ({ page }) => {
+        await expect(page.getByTestId('settings-view')).toBeVisible()
+        await expect(page.getByTestId('welcome-banner')).toBeVisible()
+        await page.getByTestId('nav-candidates').click()
+        await expect(page.getByTestId('candidates-view')).toBeVisible()
         const docx = path.join(FIXTURES_DIR, 'sample-resume.docx')
         await page.getByTestId('upload-input').setInputFiles(docx)
+        await expect(page.getByTestId('result-row')).toHaveCount(1, { timeout: 15000 })
         await expect(
-          page.getByTestId('result-status').filter({ hasText: 'Gemini API key not set. Add it in Settings.' })
+          page.getByTestId('result-status').filter({ hasText: /Gemini API key not set\. Add it in Settings\./ })
         ).toHaveCount(1, { timeout: 30000 })
       },
-      { e2e: false }
+      { e2e: false, waitForView: 'settings' }
     )
   })
 
