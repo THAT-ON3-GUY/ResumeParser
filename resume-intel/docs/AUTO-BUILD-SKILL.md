@@ -8,6 +8,31 @@ determine what needs to be built next, and start building immediately.
 `.cursor/skills/resume-intel-auto-verify/SKILL.md` and run automated
 tests before asking the user to manual-test.
 
+**Repo sync skill:** Before orienting or writing code, read and follow
+`.cursor/skills/resume-intel-repo-sync/SKILL.md` (Step 0). Sync with
+`origin/main`, resolve merge conflicts, and ask the user before
+discarding local work.
+
+---
+
+## Step 0 — Sync Repository (every activation)
+
+Run **before** Step 1 whenever AUTO-BUILD starts or the machine may be
+stale (first open in a while, wrong base version, or local/remote drift).
+
+1. Read `.cursor/skills/resume-intel-repo-sync/SKILL.md` and execute it fully.
+2. From the git repo root: `git fetch origin`, inspect status, pull if safe.
+3. If the working tree has local changes → **ask the user** (stash, discard,
+   or commit) before pull — never hard-reset without explicit approval.
+4. If merge conflicts occur → resolve obvious cases (lockfile, generated
+   artifacts); **ask the user** for conflicts in `src/` or story docs.
+5. After pull: `npm install` in `resume-intel/`; confirm `npm run build` once.
+6. Output the REPO SYNC report from the skill, then continue to Step 1.
+
+**Stop AUTO-BUILD** if sync is blocked, needs credentials, or the user
+must choose between conflicting versions. Do not build on a dirty conflict
+state.
+
 ---
 
 ## Step 1 — Orient (do this first, every time)
@@ -279,8 +304,16 @@ The user will activate you with one of these phrases:
 - "keep building"
 - "continue"
 
-When you see any of these, begin at Step 1 immediately.
-Do not ask clarifying questions. Just start.
+When you see any of these, begin at **Step 0** (sync), then Step 1.
+Do not ask clarifying questions about which feature to build — but **do**
+ask when Step 0 finds local changes or merge conflicts needing a decision.
+
+To sync only (no build):
+- "sync repo"
+- "pull latest"
+- "update from remote"
+
+Begin at Step 0; stop after the REPO SYNC report unless the user says to continue.
 
 To run verification only (no new code):
 - "verify"
