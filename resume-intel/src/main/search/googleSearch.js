@@ -1,8 +1,10 @@
-import store from '../store.js'
-import { buildQuery } from './searchQuery.js'
-import { parseGoogleItems } from './googleParse.js'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import store from '../store.js'
+
+import { parseGoogleItems } from './googleParse.js'
+import { buildQuery } from './searchQuery.js'
 
 export { parseGoogleItems } from './googleParse.js'
 

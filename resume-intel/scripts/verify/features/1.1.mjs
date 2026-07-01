@@ -1,7 +1,8 @@
 import { readFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import { readResumeText } from '../../../src/main/parser/fileReader.js'
 import { LOW_TEXT_THRESHOLD, LOW_TEXT_WARNING } from '../../../src/renderer/src/lib/uploadStatus.js'
 

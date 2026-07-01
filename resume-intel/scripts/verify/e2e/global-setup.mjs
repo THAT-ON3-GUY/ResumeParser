@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export default async function globalSetup() {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..')

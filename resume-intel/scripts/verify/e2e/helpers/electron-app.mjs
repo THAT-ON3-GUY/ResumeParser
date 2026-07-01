@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { _electron as electron } from '@playwright/test'

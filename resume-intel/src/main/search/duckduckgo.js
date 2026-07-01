@@ -1,6 +1,8 @@
-import { launchChromium } from '../browser/playwrightLaunch.js'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { launchChromium } from '../browser/playwrightLaunch.js'
+
 import { buildQuery, flagLinkedIn } from './searchQuery.js'
 
 export { buildQuery } from './searchQuery.js'

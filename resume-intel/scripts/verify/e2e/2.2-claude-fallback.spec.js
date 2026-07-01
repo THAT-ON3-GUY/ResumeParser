@@ -3,7 +3,9 @@
  * Story: docs/features/02-ai-parsing/2.2-claude-fallback.md
  */
 import path from 'node:path'
+
 import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

@@ -3,7 +3,9 @@
  * Story: docs/features/06-results-ui/6.1-results-table.md
  */
 import path from 'node:path'
+
 import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

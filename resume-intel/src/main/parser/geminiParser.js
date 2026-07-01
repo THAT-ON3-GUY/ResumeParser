@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import store from '../store.js'
+
 import { EXTRACTION_PROMPT, SUMMARY_PROMPT } from './prompts.js'
 
 export const GEMINI_API_KEY_ERROR = 'Gemini API key not set. Add it in Settings.'

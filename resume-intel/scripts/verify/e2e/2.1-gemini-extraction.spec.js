@@ -3,8 +3,10 @@
  * Story: docs/features/02-ai-parsing/2.1-gemini-extraction.md
  * testids: upload-input, result-row, result-status
  */
-import { test, expect } from '@playwright/test'
 import path from 'node:path'
+
+import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

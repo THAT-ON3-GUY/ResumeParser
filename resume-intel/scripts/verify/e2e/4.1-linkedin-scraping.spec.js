@@ -4,6 +4,7 @@
  * testids: linkedin-profile-card, linkedin-profile-name, linkedin-session-expired, linkedin-profile-empty
  */
 import { test, expect } from '@playwright/test'
+
 import {
   seedStore,
   launchApp,

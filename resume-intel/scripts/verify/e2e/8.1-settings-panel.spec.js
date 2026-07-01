@@ -5,6 +5,7 @@
  *           settings-ai-claude, settings-link-gemini, settings-clear-all, empty-table
  */
 import { test, expect } from '@playwright/test'
+
 import {
   seedStore,
   launchApp,

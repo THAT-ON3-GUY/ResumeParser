@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import store from '../store.js'
+
 import { getSettings } from '../settings.js'
+import store from '../store.js'
 
 const LOGIN_URL = 'https://www.linkedin.com/login'
 const PROFILE_PATH_RE = /^\/in\/[^/?#]+\/?$/i

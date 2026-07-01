@@ -5,6 +5,7 @@
  *           linkedin-connect-prompt
  */
 import { test, expect } from '@playwright/test'
+
 import {
   seedStore,
   launchApp,

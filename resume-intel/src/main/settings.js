@@ -1,5 +1,5 @@
-import store from './store.js'
 import { clearLinkedInSession } from './search/linkedin.js'
+import store from './store.js'
 
 export const SETTINGS_KEYS = [
   'aiProvider',

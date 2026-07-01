@@ -1,8 +1,9 @@
 import 'pdf-parse/worker'
 import { readFile } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
-import { PDFParse } from 'pdf-parse'
+
 import mammoth from 'mammoth'
+import { PDFParse } from 'pdf-parse'
 
 /**
  * @param {string} filePath

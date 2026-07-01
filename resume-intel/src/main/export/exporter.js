@@ -1,12 +1,13 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+
 import { app, shell } from 'electron'
 import XLSX from 'xlsx-js-style'
 
 import { getAllCandidates, getCandidateById, getCandidatesByIds } from '../db/database.js'
+
 import {
   CSV_HEADERS,
-  TOP_LEVEL_FIELD_KEYS,
   candidateToCsvLine,
   collectSourceUrls,
   flattenCandidateFields

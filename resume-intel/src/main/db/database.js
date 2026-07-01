@@ -1,5 +1,6 @@
-import Database from 'better-sqlite3'
 import { join } from 'node:path'
+
+import Database from 'better-sqlite3'
 import { app } from 'electron'
 
 /** @typedef {object} CandidateRecord

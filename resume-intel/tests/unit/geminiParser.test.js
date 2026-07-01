@@ -6,13 +6,13 @@ vi.mock('../../src/main/store.js', () => ({
   }
 }))
 
-import store from '../../src/main/store.js'
 import {
   extractWithGemini,
   GEMINI_API_KEY_ERROR,
   parseGeminiJson,
   repairTruncatedJson
 } from '../../src/main/parser/geminiParser.js'
+import store from '../../src/main/store.js'
 
 describe('parseGeminiJson', () => {
   it('strips markdown fences before parsing JSON', () => {

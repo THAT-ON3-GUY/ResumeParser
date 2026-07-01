@@ -3,6 +3,7 @@
  * Story: docs/features/10-packaging/10.1-installer-packaging.md
  */
 import { test, expect } from '@playwright/test'
+
 import { withFreshApp } from './helpers/electron-app.mjs'
 
 const FEATURE = '10.1'

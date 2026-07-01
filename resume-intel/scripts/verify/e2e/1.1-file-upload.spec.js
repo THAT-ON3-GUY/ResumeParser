@@ -3,10 +3,12 @@
  * Story: docs/features/01-resume-ingestion/1.1-file-upload-and-extraction.md
  * testids: upload-zone, upload-input, upload-rejection, result-row, result-status
  */
-import { test, expect } from '@playwright/test'
-import path from 'node:path'
 import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import path from 'node:path'
+
+import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

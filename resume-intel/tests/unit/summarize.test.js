@@ -6,9 +6,9 @@ vi.mock('../../src/main/store.js', () => ({
   }
 }))
 
-import store from '../../src/main/store.js'
 import { summarizeWithGemini } from '../../src/main/parser/geminiParser.js'
 import { SUMMARY_PROMPT } from '../../src/main/parser/prompts.js'
+import store from '../../src/main/store.js'
 
 describe('SUMMARY_PROMPT', () => {
   it('lists all required summary JSON keys', () => {

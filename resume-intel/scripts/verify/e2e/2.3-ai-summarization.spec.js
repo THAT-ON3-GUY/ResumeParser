@@ -5,6 +5,7 @@
  *           ai-summary-section, ai-summary-provider, ai-summary-text, ai-summary-confidence
  */
 import { test, expect } from '@playwright/test'
+
 import { withFreshApp, uploadAndParse, queryCandidates } from './helpers/electron-app.mjs'
 
 const FEATURE = '2.3'

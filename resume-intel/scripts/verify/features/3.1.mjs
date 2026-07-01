@@ -1,7 +1,8 @@
-import { buildQuery, parseDdgHtml, searchDuckDuckGo, resetSearchDelayForTests, markSearchFinishedForTests } from '../../../src/main/search/duckduckgo.js'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { buildQuery, parseDdgHtml, searchDuckDuckGo, resetSearchDelayForTests, markSearchFinishedForTests } from '../../../src/main/search/duckduckgo.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURES = join(__dirname, '../fixtures')

@@ -1,12 +1,14 @@
-import dotenv from 'dotenv'
-import { app, BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import store from './store.js'
+
+import dotenv from 'dotenv'
+import { app, BrowserWindow } from 'electron'
+
+import { configurePlaywrightBrowsersPath } from './browser/playwrightLaunch.js'
 import { initDatabase } from './db/database.js'
 import { registerIpcHandlers } from './ipc-handlers.js'
-import { configurePlaywrightBrowsersPath } from './browser/playwrightLaunch.js'
+import store from './store.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

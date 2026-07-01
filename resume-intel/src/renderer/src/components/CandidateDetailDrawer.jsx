@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
+
 import {
   getAllEmployers,
   getCurrentEmployer,
   formatYearRange,
   joinList
 } from '../lib/parsedResume.js'
+
 import { ConfidenceBadge } from './Badges.jsx'
 
 const cardStyle = {

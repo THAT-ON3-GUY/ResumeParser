@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import store from '../store.js'
-import { EXTRACTION_PROMPT, SUMMARY_PROMPT } from './prompts.js'
+
 import { parseGeminiJson } from './geminiParser.js'
+import { EXTRACTION_PROMPT, SUMMARY_PROMPT } from './prompts.js'
 
 export const CLAUDE_API_KEY_ERROR = 'Claude API key not set. Add it in Settings.'
 export const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-20250514'

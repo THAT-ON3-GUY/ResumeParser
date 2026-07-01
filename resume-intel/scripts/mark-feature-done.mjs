@@ -4,10 +4,11 @@
  * Usage: npm run mark-done -- --feature 9.1
  *        npm run mark-done -- --feature 9.1 --status PARTIAL
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import { findStoryPath, ROOT } from './verify/common.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

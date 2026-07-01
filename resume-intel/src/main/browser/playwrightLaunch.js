@@ -1,5 +1,6 @@
-import { app } from 'electron'
 import { join } from 'node:path'
+
+import { app } from 'electron'
 import { chromium } from 'playwright'
 
 /**

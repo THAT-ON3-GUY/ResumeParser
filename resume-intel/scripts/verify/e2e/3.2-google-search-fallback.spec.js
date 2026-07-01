@@ -3,6 +3,7 @@
  * Story: docs/features/03-candidate-search/3.2-google-search-fallback.md
  */
 import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

@@ -5,6 +5,7 @@
  *           search-results-list, search-result-card, search-results-empty
  */
 import { test, expect } from '@playwright/test'
+
 import {
   withFreshApp,
   uploadAndParse,

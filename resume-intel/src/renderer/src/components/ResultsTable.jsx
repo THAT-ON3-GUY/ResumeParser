@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { ConfidenceBadge, LinkedInBadge, LicenseBadge } from './Badges.jsx'
+import { getCurrentEmployer } from '../lib/parsedResume.js'
 import {
   educationSummary,
   firstLicense,
@@ -8,8 +8,9 @@ import {
   locationSummary,
   sortRows
 } from '../lib/tableSort.js'
-import { getCurrentEmployer } from '../lib/parsedResume.js'
 import { UPLOAD_STATUS, uploadStatusLabel, isProcessingStatus } from '../lib/uploadStatus.js'
+
+import { ConfidenceBadge, LinkedInBadge, LicenseBadge } from './Badges.jsx'
 
 const COLUMNS = [
   { key: 'fileName', label: 'File name' },

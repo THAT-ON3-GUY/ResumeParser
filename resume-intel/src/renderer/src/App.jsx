@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import CandidateDetailDrawer from './components/CandidateDetailDrawer.jsx'
 import ExportBar from './components/ExportBar.jsx'
 import ResultsTable from './components/ResultsTable.jsx'
-import CandidateDetailDrawer from './components/CandidateDetailDrawer.jsx'
-import SettingsPanel from './components/SettingsPanel.jsx'
 import SearchStatus from './components/SearchStatus.jsx'
+import SettingsPanel from './components/SettingsPanel.jsx'
 import Sidebar from './components/Sidebar.jsx'
-import Topbar from './components/Topbar.jsx'
 import StatusBar from './components/StatusBar.jsx'
+import Topbar from './components/Topbar.jsx'
 import { candidateRecordToRow } from './lib/dbRows.js'
 import { hasLicense, hasLinkedInFound } from './lib/tableSort.js'
 import { UPLOAD_STATUS, LOW_TEXT_WARNING, LOW_TEXT_THRESHOLD, isProcessingStatus } from './lib/uploadStatus.js'
@@ -58,7 +59,6 @@ export default function App() {
     const provider = settings.aiProvider ?? 'gemini'
     const needsGeminiKey = provider === 'gemini' && !String(settings.geminiApiKey ?? '').trim()
     if (needsGeminiKey) {
-      console.log('[App] first launch — no Gemini API key, opening Settings')
       setWelcomeSetup(true)
       setView('settings')
     } else {

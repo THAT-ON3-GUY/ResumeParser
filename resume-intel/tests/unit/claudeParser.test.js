@@ -6,12 +6,12 @@ vi.mock('../../src/main/store.js', () => ({
   }
 }))
 
-import store from '../../src/main/store.js'
 import {
   CLAUDE_API_KEY_ERROR,
   DEFAULT_CLAUDE_MODEL,
   extractWithClaude
 } from '../../src/main/parser/claudeParser.js'
+import store from '../../src/main/store.js'
 
 describe('extractWithClaude', () => {
   beforeEach(() => {

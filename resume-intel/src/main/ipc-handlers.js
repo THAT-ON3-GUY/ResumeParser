@@ -1,8 +1,8 @@
-import { ipcMain, shell, app, BrowserWindow } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import store from './store.js'
-import { getSettings, setSetting, disconnectLinkedIn } from './settings.js'
+
+import { ipcMain, shell, app, BrowserWindow } from 'electron'
+
 import {
   insertCandidate,
   getAllCandidates,
@@ -15,11 +15,10 @@ import {
   updateCandidateAiSummary
 } from './db/database.js'
 import { exportCandidateRowCsv, exportCandidatesCsv, exportCandidatesExcel } from './export/exporter.js'
-import { readResumeText } from './parser/fileReader.js'
 import { extractResume, summarizeFindings } from './parser/aiProvider.js'
+import { readResumeText } from './parser/fileReader.js'
 import { searchDuckDuckGo } from './search/duckduckgo.js'
 import { searchGoogle } from './search/googleSearch.js'
-import { checkPublicSources } from './search/publicSources.js'
 import {
   hasLinkedInSession,
   openLinkedInLogin,
@@ -27,6 +26,9 @@ import {
   notifyLinkedInSessionExpired,
   scrapeLinkedInForCandidate
 } from './search/linkedin.js'
+import { checkPublicSources } from './search/publicSources.js'
+import { getSettings, setSetting, disconnectLinkedIn } from './settings.js'
+import store from './store.js'
 
 function getMainWindow() {
   return BrowserWindow.getAllWindows().find((w) => {

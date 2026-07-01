@@ -1,6 +1,7 @@
-import { extractWithGemini, summarizeWithGemini } from './geminiParser.js'
-import { extractWithClaude, summarizeWithClaude } from './claudeParser.js'
 import store from '../store.js'
+
+import { extractWithClaude, summarizeWithClaude } from './claudeParser.js'
+import { extractWithGemini, summarizeWithGemini } from './geminiParser.js'
 
 export const extractResume = async (resumeText) => {
   const provider = store.get('aiProvider', 'gemini')

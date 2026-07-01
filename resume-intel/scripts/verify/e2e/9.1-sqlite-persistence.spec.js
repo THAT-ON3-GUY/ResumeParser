@@ -4,6 +4,7 @@
  * testids: upload-input, result-row, result-delete, empty-table, settings-clear-all, nav-settings
  */
 import { test, expect } from '@playwright/test'
+
 import {
   seedStore,
   launchApp,

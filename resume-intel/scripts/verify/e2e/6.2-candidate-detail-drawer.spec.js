@@ -3,6 +3,7 @@
  * Story: docs/features/06-results-ui/6.2-candidate-detail-drawer.md
  */
 import { test, expect } from '@playwright/test'
+
 import { withFreshApp, uploadAndParse } from './helpers/electron-app.mjs'
 
 const FEATURE = '6.2'

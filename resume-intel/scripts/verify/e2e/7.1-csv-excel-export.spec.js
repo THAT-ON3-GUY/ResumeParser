@@ -2,10 +2,12 @@
  * E2E tests — Feature 7.1 CSV & Excel Export
  * Story: docs/features/07-export/7.1-csv-excel-export.md
  */
-import path from 'node:path'
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { test, expect } from '@playwright/test'
 import XLSX from 'xlsx'
+
 import {
   withFreshApp,
   uploadAndParse,
