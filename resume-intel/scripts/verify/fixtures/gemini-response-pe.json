@@ -4,15 +4,47 @@
     "company": "BuildCo",
     "title": "Professional Engineer",
     "start_year": 2018,
-    "end_year": null
+    "end_year": null,
+    "source_quote": "Professional Engineer, BuildCo (2018–present)",
+    "confidence": "high"
   },
-  "all_employers": [{ "company": "BuildCo", "title": "Professional Engineer", "start_year": 2018, "end_year": null }],
-  "education": [{ "school": "State University", "degree": "BS", "field": "Civil Engineering", "graduation_year": 2014 }],
-  "licenses_certifications": ["PE License"],
+  "all_employers": [
+    {
+      "company": "BuildCo",
+      "title": "Professional Engineer",
+      "start_year": 2018,
+      "end_year": null,
+      "source_quote": "Professional Engineer, BuildCo (2018–present)",
+      "confidence": "high"
+    }
+  ],
+  "education": [
+    {
+      "school": "State University",
+      "degree": "BS",
+      "field": "Civil Engineering",
+      "graduation_year": 2014,
+      "source_quote": "State University — BS Civil Engineering, 2014",
+      "confidence": "high"
+    }
+  ],
+  "licenses_certifications": [
+    {
+      "name": "PE License",
+      "issuing_body": "Colorado State Board",
+      "year": 2016,
+      "source_quote": "PE License — Colorado State Board, 2016",
+      "confidence": "high"
+    }
+  ],
   "skills": [],
-  "location_hints": ["Denver, CO"],
+  "location_hints": [
+    "Denver, CO"
+  ],
   "associations_memberships": [],
-  "languages": ["English"],
+  "languages": [
+    "English"
+  ],
   "pronouns": null,
   "years_experience": 10,
   "contact_hints": [],

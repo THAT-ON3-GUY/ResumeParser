@@ -70,6 +70,7 @@ export default function Sidebar({
                 : undefined
             }
             onClick={() => onFilterChange('linkedin')}
+            data-testid="filter-linkedin"
           >
             <span>LinkedIn found</span>
             <span className="filter-chip-count">{filterCounts.linkedin}</span>
@@ -83,9 +84,24 @@ export default function Sidebar({
                 : undefined
             }
             onClick={() => onFilterChange('high')}
+            data-testid="filter-high-confidence"
           >
             <span>High confidence</span>
             <span className="filter-chip-count">{filterCounts.high}</span>
+          </button>
+          <button
+            type="button"
+            className="filter-chip"
+            style={
+              filters.mode === 'licensed'
+                ? { background: 'var(--bg-accent)', color: 'var(--text-accent)' }
+                : undefined
+            }
+            onClick={() => onFilterChange('licensed')}
+            data-testid="filter-licensed"
+          >
+            <span>Has license</span>
+            <span className="filter-chip-count">{filterCounts.licensed}</span>
           </button>
         </>
       ) : null}

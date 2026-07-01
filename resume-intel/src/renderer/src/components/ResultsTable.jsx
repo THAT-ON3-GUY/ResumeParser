@@ -1,59 +1,32 @@
 import { useMemo, useState } from 'react'
-import { getCurrentEmployer } from '../lib/parsedResume.js'
+
 import { ConfidenceBadge, LinkedInBadge, LicenseBadge } from './Badges.jsx'
+import {
+  educationSummary,
+  firstLicense,
+  hasLinkedInFound,
+  locationSummary,
+  sortRows
+} from '../lib/tableSort.js'
+import { getCurrentEmployer } from '../lib/parsedResume.js'
 import { UPLOAD_STATUS, uploadStatusLabel, isProcessingStatus } from '../lib/uploadStatus.js'
 
 const COLUMNS = [
   { key: 'fileName', label: 'File name' },
-  { key: 'role', label: 'Role' },
-  { key: 'employer', label: 'Employer' },
+  { key: 'summaryTitle', label: 'Summary title' },
+  { key: 'employer', label: 'Most recent employer' },
+  { key: 'title', label: 'Most recent title' },
+  { key: 'location', label: 'Location' },
   { key: 'education', label: 'Education' },
-  { key: 'license', label: 'License', static: true },
-  { key: 'years', label: 'Exp' },
-  { key: 'linkedin', label: 'LinkedIn', static: true },
-  { key: 'confidence', label: 'Confidence', static: true },
+  { key: 'license', label: 'Licenses' },
+  { key: 'years', label: 'Years exp.' },
+  { key: 'linkedin', label: 'LinkedIn found' },
+  { key: 'confidence', label: 'Confidence' },
   { key: 'actions', label: 'Actions', static: true }
 ]
 
-function educationSummary(edu) {
-  if (!Array.isArray(edu) || !edu.length) return '—'
-  const e = edu[0]
-  const parts = [e.degree, e.field].filter(Boolean).join(', ')
-  const school = e.school || '—'
-  const yr = e.graduation_year != null ? ` (${e.graduation_year})` : ''
-  return `${parts ? `${parts} @ ` : ''}${school}${yr}`
-}
-
-function firstLicense(licenses) {
-  if (!Array.isArray(licenses) || !licenses.length) return null
-  const item = licenses[0]
-  if (typeof item === 'string') return item
-  return item?.name || null
-}
-
 function rowStatusLabel(row) {
   return uploadStatusLabel(row)
-}
-
-function sortValue(row, key) {
-  const p = row.parsed
-  const cur = p ? getCurrentEmployer(p) : null
-  switch (key) {
-    case 'fileName':
-      return row.fileName
-    case 'role':
-      return cur?.title ?? ''
-    case 'employer':
-      return cur?.company ?? ''
-    case 'education':
-      return educationSummary(p?.education)
-    case 'years':
-      return p?.years_experience ?? -1
-    case 'confidence':
-      return p?.parsing_confidence ?? ''
-    default:
-      return ''
-  }
 }
 
 export default function ResultsTable({
@@ -65,6 +38,7 @@ export default function ResultsTable({
   onDeleteRow,
   onRerunSearch,
   onRetryRow,
+  onExportRow,
   searchQuery
 }) {
   const [sortKey, setSortKey] = useState('fileName')
@@ -75,11 +49,10 @@ export default function ResultsTable({
     if (!q) return rows
     return rows.filter((row) => {
       const p = row.parsed
-      const cur = p ? getCurrentEmployer(p) : null
       const haystack = [
         row.fileName,
-        cur?.title,
-        cur?.company,
+        p?.summary_title,
+        p?.location_hints?.join(' '),
         educationSummary(p?.education),
         ...(p?.skills ?? [])
       ]
@@ -90,19 +63,10 @@ export default function ResultsTable({
     })
   }, [rows, searchQuery])
 
-  const sortedRows = useMemo(() => {
-    const list = [...filteredRows]
-    list.sort((a, b) => {
-      const av = sortValue(a, sortKey)
-      const bv = sortValue(b, sortKey)
-      if (av === bv) return 0
-      if (av == null || av === '') return 1
-      if (bv == null || bv === '') return -1
-      const cmp = av > bv ? 1 : -1
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-    return list
-  }, [filteredRows, sortKey, sortDir])
+  const sortedRows = useMemo(
+    () => sortRows(filteredRows, sortKey, sortDir),
+    [filteredRows, sortKey, sortDir]
+  )
 
   const allSelected =
     sortedRows.length > 0 && sortedRows.every((row) => selectedIds.has(row.id))
@@ -113,7 +77,7 @@ export default function ResultsTable({
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortKey(key)
-      setSortDir('asc')
+      setSortDir(key === 'confidence' ? 'desc' : 'asc')
     }
   }
 
@@ -133,9 +97,9 @@ export default function ResultsTable({
       >
         <i className="ti ti-file-search" style={{ fontSize: '40px' }} aria-hidden="true" />
         <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>
-          No candidates yet
+          No resumes yet
         </p>
-        <p style={{ fontSize: '12px', margin: 0 }}>Drop resume files above to get started</p>
+        <p style={{ fontSize: '12px', margin: 0 }}>Drop files above to get started</p>
       </div>
     )
   }
@@ -162,6 +126,8 @@ export default function ResultsTable({
                 key={col.key}
                 style={col.static ? { cursor: 'default' } : undefined}
                 onClick={() => handleSort(col.key, col.static)}
+                data-testid={col.static ? undefined : `sort-${col.key}`}
+                aria-sort={!col.static && sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 {col.label}
                 {!col.static && sortKey === col.key ? (
@@ -176,14 +142,15 @@ export default function ResultsTable({
             const p = row.parsed
             const cur = p ? getCurrentEmployer(p) : null
             const selected = selectedIds.has(row.id)
-            const linkedInFound = Boolean(row.linkedinData)
+            const linkedInFound = hasLinkedInFound(row)
             const license = row.status === UPLOAD_STATUS.DONE ? firstLicense(p?.licenses_certifications) : null
+            const done = row.status === UPLOAD_STATUS.DONE && p
 
             return (
               <tr
                 key={row.id}
                 className={selected ? 'row-selected' : ''}
-                onClick={() => row.status === UPLOAD_STATUS.DONE && p && onOpenDetail?.(row.id)}
+                onClick={() => done && onOpenDetail?.(row.id)}
                 data-testid="result-row"
               >
                 <td onClick={(e) => e.stopPropagation()}>
@@ -208,44 +175,32 @@ export default function ResultsTable({
                     </span>
                   ) : null}
                 </td>
-                <td className="td-muted">
-                  {row.status === UPLOAD_STATUS.DONE ? cur?.title || '—' : '…'}
-                </td>
-                <td className="td-muted">
-                  {row.status === UPLOAD_STATUS.DONE ? cur?.company || '—' : '…'}
-                </td>
-                <td className="td-muted">
-                  {row.status === UPLOAD_STATUS.DONE ? educationSummary(p?.education) : '…'}
-                </td>
+                <td className="td-muted">{done ? p.summary_title || '—' : '…'}</td>
+                <td className="td-muted">{done ? cur?.company || '—' : '…'}</td>
+                <td className="td-muted">{done ? cur?.title || '—' : '…'}</td>
+                <td className="td-muted">{done ? locationSummary(p.location_hints) : '…'}</td>
+                <td className="td-muted">{done ? educationSummary(p.education) : '…'}</td>
                 <td>
-                  {row.status === UPLOAD_STATUS.DONE ? (
-                    <LicenseBadge license={license} testId={`badge-license-${row.id}`} />
-                  ) : (
-                    '…'
-                  )}
+                  {done ? <LicenseBadge license={license} testId={`badge-license-${row.id}`} /> : '…'}
                 </td>
-                <td className="td-muted">
-                  {row.status === UPLOAD_STATUS.DONE ? (p?.years_experience ?? '—') : '…'}
-                </td>
+                <td className="td-muted">{done ? (p.years_experience ?? '—') : '…'}</td>
                 <td>
-                  {row.status === UPLOAD_STATUS.DONE ? (
+                  {done ? (
                     <LinkedInBadge found={linkedInFound} testId={`badge-linkedin-${row.id}`} />
                   ) : (
                     '…'
                   )}
                 </td>
                 <td>
-                  {row.status === UPLOAD_STATUS.DONE && p?.parsing_confidence ? (
-                    <ConfidenceBadge score={p.parsing_confidence} testId={`badge-confidence-${row.id}`} />
-                  ) : row.status === UPLOAD_STATUS.DONE ? (
-                    <ConfidenceBadge score="low" testId={`badge-confidence-${row.id}`} />
+                  {done ? (
+                    <ConfidenceBadge score={p.parsing_confidence || 'low'} testId={`badge-confidence-${row.id}`} />
                   ) : (
                     '…'
                   )}
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <div className="row-actions">
-                    {row.status === UPLOAD_STATUS.DONE && p ? (
+                    {done ? (
                       <button
                         type="button"
                         className="icon-btn"
@@ -267,7 +222,7 @@ export default function ResultsTable({
                         <i className="ti ti-refresh" aria-hidden="true" />
                       </button>
                     ) : null}
-                    {row.dbId != null && row.status === UPLOAD_STATUS.DONE ? (
+                    {row.dbId != null && done ? (
                       <button
                         type="button"
                         className="icon-btn"
@@ -275,7 +230,18 @@ export default function ResultsTable({
                         onClick={() => onRerunSearch?.(row)}
                         data-testid={`row-action-search-${row.id}`}
                       >
-                        <i className="ti ti-refresh" aria-hidden="true" />
+                        <i className="ti ti-search" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    {row.dbId != null && done ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Export row"
+                        onClick={() => onExportRow?.(row)}
+                        data-testid={`row-action-export-${row.id}`}
+                      >
+                        <i className="ti ti-download" aria-hidden="true" />
                       </button>
                     ) : null}
                     {!isProcessingStatus(row.status) ? (

@@ -20,8 +20,19 @@ export const FEATURE_MAP = {
     files: ['src/main/parser/geminiParser.js', 'src/main/parser/aiProvider.js', 'src/main/parser/prompts.js'],
     ipc: ['resume:parse']
   },
-  '2.2': { files: ['src/main/parser/claudeParser.js'], ipc: [] },
-  '2.3': { files: ['src/main/parser/prompts.js'], ipc: [] },
+  '2.2': {
+    files: ['src/main/parser/claudeParser.js', 'src/main/parser/aiProvider.js'],
+    ipc: ['resume:parse']
+  },
+  '2.3': {
+    files: [
+      'src/main/parser/prompts.js',
+      'src/main/parser/geminiParser.js',
+      'src/main/parser/aiProvider.js',
+      'src/renderer/src/components/CandidateDetailDrawer.jsx'
+    ],
+    ipc: ['resume:parse', 'search:run']
+  },
   '3.1': { files: ['src/main/search/duckduckgo.js', 'src/renderer/src/components/SearchStatus.jsx'], ipc: ['search:run'] },
   '4.1': {
     files: [
@@ -39,9 +50,19 @@ export const FEATURE_MAP = {
     files: ['src/main/search/publicSources.js', 'src/renderer/src/components/CandidateDetailDrawer.jsx'],
     ipc: ['resume:parse', 'search:run']
   },
-  '6.1': { files: ['src/renderer/src/components/ResultsTable.jsx'], ipc: ['db:get-all'] },
+  '6.1': {
+    files: [
+      'src/renderer/src/components/ResultsTable.jsx',
+      'src/renderer/src/lib/tableSort.js',
+      'src/main/export/exporter.js'
+    ],
+    ipc: ['db:get-all', 'export:row']
+  },
   '6.2': { files: ['src/renderer/src/components/CandidateDetailDrawer.jsx'], ipc: [] },
-  '7.1': { files: ['src/main/export/exporter.js'], ipc: ['export:csv', 'export:excel'] },
+  '7.1': {
+    files: ['src/main/export/exporter.js', 'src/renderer/src/components/ExportBar.jsx'],
+    ipc: ['export:csv', 'export:excel', 'export:row']
+  },
   '8.1': {
     files: ['src/main/settings.js', 'src/renderer/src/components/SettingsPanel.jsx'],
     ipc: ['settings:get', 'settings:set', 'shell:open-external', 'linkedin:disconnect']

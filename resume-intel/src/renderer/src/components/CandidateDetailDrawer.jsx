@@ -31,14 +31,15 @@ function EmployerTimeline({ employers }) {
     return <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>No employers extracted.</p>
   }
   return (
-    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
+    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }} data-testid="employer-timeline">
       {employers.map((job, i) => (
-        <li key={i} style={{ marginBottom: 8 }}>
+        <li key={i} style={{ marginBottom: 8 }} data-testid={`employer-timeline-item-${i}`}>
           <div style={{ fontWeight: 500 }}>{job.company || '—'}</div>
           <div style={{ color: 'var(--text-secondary)' }}>{job.title || '—'}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             {formatYearRange(job.start_year, job.end_year)}
           </div>
+          <SourceQuoteDetails quote={job.source_quote} confidence={job.confidence} testId={`employer-${i}`} />
         </li>
       ))}
     </ul>
@@ -69,6 +70,7 @@ function EducationList({ items }) {
           <strong>{e.school || '—'}</strong>
           {e.degree || e.field ? <> — {[e.degree, e.field].filter(Boolean).join(', ')}</> : null}
           {e.graduation_year != null ? ` (${e.graduation_year})` : ''}
+          <SourceQuoteDetails quote={e.source_quote} confidence={e.confidence} testId={`education-${i}`} />
         </li>
       ))}
     </ul>
@@ -86,9 +88,33 @@ function LicensesList({ items }) {
           <strong>{typeof L === 'string' ? L : L.name || '—'}</strong>
           {typeof L === 'object' && L.issuing_body ? ` — ${L.issuing_body}` : ''}
           {typeof L === 'object' && L.year != null ? ` (${L.year})` : ''}
+          <SourceQuoteDetails quote={typeof L === 'object' ? L.source_quote : null} confidence={typeof L === 'object' ? L.confidence : null} testId={`license-${i}`} />
         </li>
       ))}
     </ul>
+  )
+}
+
+function SourceQuoteDetails({ quote, confidence, testId }) {
+  if (!quote) return null
+  return (
+    <details style={{ marginTop: 4, fontSize: 11 }} data-testid={`source-quote-${testId}`}>
+      <summary style={{ cursor: 'pointer', color: 'var(--text-muted)' }}>
+        Source quote{confidence ? ` (${confidence})` : ''}
+      </summary>
+      <blockquote
+        style={{
+          margin: '4px 0 0',
+          padding: '6px 8px',
+          borderLeft: '2px solid var(--border)',
+          color: 'var(--text-secondary)',
+          fontStyle: 'italic'
+        }}
+        data-testid={`source-quote-text-${testId}`}
+      >
+        {quote}
+      </blockquote>
+    </details>
   )
 }
 
@@ -118,6 +144,7 @@ export default function CandidateDetailDrawer({ row, onClose }) {
         style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.1)', border: 'none', cursor: 'pointer' }}
         onClick={onClose}
         aria-label="Close detail"
+        data-testid="detail-backdrop"
       />
       <aside
         style={{
@@ -158,6 +185,7 @@ export default function CandidateDetailDrawer({ row, onClose }) {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   {formatYearRange(cur.start_year, cur.end_year)}
                 </div>
+                <SourceQuoteDetails quote={cur.source_quote} confidence={cur.confidence} testId="current-role" />
               </div>
             ) : (
               <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>—</p>
@@ -350,6 +378,54 @@ export default function CandidateDetailDrawer({ row, onClose }) {
                 {row.publicRecords?.notes?.length
                   ? row.publicRecords.notes.join(' ')
                   : 'No public record sources matched this resume.'}
+              </p>
+            )}
+          </Section>
+
+          <Section title="AI summary">
+            {row.aiSummary?.summary ? (
+              <div style={cardStyle} data-testid="ai-summary-section">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span className="badge badge-found" data-testid="ai-summary-provider">
+                    {row.aiProvider === 'claude' ? 'Claude' : 'Gemini'}
+                  </span>
+                  {row.aiSummary.match_confidence ? (
+                    <ConfidenceBadge score={row.aiSummary.match_confidence} testId="ai-summary-confidence" />
+                  ) : null}
+                </div>
+                <p style={{ margin: '0 0 8px', fontSize: 13 }} data-testid="ai-summary-text">
+                  {row.aiSummary.summary}
+                </p>
+                {row.aiSummary.best_outreach_method ? (
+                  <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    <strong>Outreach:</strong> {row.aiSummary.best_outreach_method}
+                  </p>
+                ) : null}
+                {Array.isArray(row.aiSummary.contact_hints) && row.aiSummary.contact_hints.length ? (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Contact hints</div>
+                    <ListBlock items={row.aiSummary.contact_hints} empty="None" />
+                  </div>
+                ) : null}
+                {Array.isArray(row.aiSummary.discrepancies) && row.aiSummary.discrepancies.length ? (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Discrepancies</div>
+                    <ListBlock items={row.aiSummary.discrepancies} empty="None" />
+                  </div>
+                ) : null}
+                {Array.isArray(row.aiSummary.recommended_search_queries) &&
+                row.aiSummary.recommended_search_queries.length ? (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Recommended follow-up queries
+                    </div>
+                    <ListBlock items={row.aiSummary.recommended_search_queries} empty="None" />
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }} data-testid="ai-summary-empty">
+                {row.aiSummary ? 'Summary unavailable.' : 'Summary not generated yet.'}
               </p>
             )}
           </Section>

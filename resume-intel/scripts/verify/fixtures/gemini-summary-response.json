@@ -1,0 +1,10 @@
+{
+  "summary": "Strong alignment between resume and LinkedIn: Senior Engineer at Acme Corp in Boston matches the scraped LinkedIn profile. Public records did not surface additional credentials.",
+  "match_confidence": "high",
+  "best_outreach_method": "LinkedIn InMail referencing Acme Corp engineering role",
+  "contact_hints": [],
+  "discrepancies": [],
+  "recommended_search_queries": [
+    "\"Acme Corp\" \"Senior Engineer\" site:linkedin.com/in"
+  ]
+}

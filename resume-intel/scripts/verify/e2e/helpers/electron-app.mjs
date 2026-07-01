@@ -34,7 +34,7 @@ export function seedStore(overrides = {}) {
 
 export function getLaunchEnv(
   userDataDir,
-  { e2e = true, ddgEmpty = false, linkedinFixture, geminiFixture, publicTimeout } = {}
+  { e2e = true, ddgEmpty = false, linkedinFixture, geminiFixture, summaryFixture, publicTimeout } = {}
 ) {
   const env = {
     ...process.env,
@@ -63,6 +63,11 @@ export function getLaunchEnv(
     env.RESUME_INTEL_E2E_GEMINI_FIXTURE = geminiFixture
   } else {
     delete env.RESUME_INTEL_E2E_GEMINI_FIXTURE
+  }
+  if (summaryFixture) {
+    env.RESUME_INTEL_E2E_SUMMARY_FIXTURE = summaryFixture
+  } else {
+    delete env.RESUME_INTEL_E2E_SUMMARY_FIXTURE
   }
   if (publicTimeout) {
     env.RESUME_INTEL_E2E_PUBLIC_TIMEOUT = publicTimeout
@@ -118,6 +123,12 @@ export function readExternalUrl(userDataDir) {
 export function clearExternalUrl(userDataDir) {
   const p = join(userDataDir, 'e2e-last-external-url.txt')
   if (existsSync(p)) rmSync(p)
+}
+
+export function readExportPath(userDataDir) {
+  const p = join(userDataDir, 'e2e-last-export-path.txt')
+  if (!existsSync(p)) return null
+  return readFileSync(p, 'utf8').trim()
 }
 
 export async function uploadAndParse(page, fixturesDir = FIXTURES_DIR, fileName = 'sample-resume.pdf') {

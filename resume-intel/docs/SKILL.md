@@ -161,6 +161,6 @@ When asking an AI to implement a story:
 - [x] **Milestone 3** — LinkedIn authenticated scraping
 - [x] **Milestone 4** — Public records APIs
 - [x] **Milestone 5** — SQLite persistence
-- [ ] **Milestone 6** — Export (CSV + Excel)
+- [x] **Milestone 6** — Export (CSV + Excel)
 - [x] **Milestone 7** — Settings panel
 - [ ] **Milestone 8** — Packaging + installer

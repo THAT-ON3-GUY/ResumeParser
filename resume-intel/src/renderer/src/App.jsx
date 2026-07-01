@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import ExportBar from './components/ExportBar.jsx'
 import ResultsTable from './components/ResultsTable.jsx'
 import CandidateDetailDrawer from './components/CandidateDetailDrawer.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
@@ -7,12 +8,8 @@ import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import StatusBar from './components/StatusBar.jsx'
 import { candidateRecordToRow } from './lib/dbRows.js'
-import {
-  UPLOAD_STATUS,
-  LOW_TEXT_WARNING,
-  LOW_TEXT_THRESHOLD,
-  isProcessingStatus
-} from './lib/uploadStatus.js'
+import { hasLicense, hasLinkedInFound } from './lib/tableSort.js'
+import { UPLOAD_STATUS, LOW_TEXT_WARNING, LOW_TEXT_THRESHOLD, isProcessingStatus } from './lib/uploadStatus.js'
 
 export default function App() {
   const [view, setView] = useState('candidates')
@@ -73,17 +70,19 @@ export default function App() {
   const filterCounts = useMemo(
     () => ({
       all: rows.length,
-      linkedin: rows.filter((r) => r.linkedinData).length,
-      high: rows.filter((r) => String(r.parsed?.parsing_confidence).toLowerCase() === 'high').length
+      linkedin: rows.filter((r) => hasLinkedInFound(r)).length,
+      high: rows.filter((r) => String(r.parsed?.parsing_confidence).toLowerCase() === 'high').length,
+      licensed: rows.filter((r) => hasLicense(r)).length
     }),
     [rows]
   )
 
   const filteredRows = useMemo(() => {
-    if (filters.mode === 'linkedin') return rows.filter((r) => r.linkedinData)
+    if (filters.mode === 'linkedin') return rows.filter((r) => hasLinkedInFound(r))
     if (filters.mode === 'high') {
       return rows.filter((r) => String(r.parsed?.parsing_confidence).toLowerCase() === 'high')
     }
+    if (filters.mode === 'licensed') return rows.filter((r) => hasLicense(r))
     return rows
   }, [rows, filters.mode])
 
@@ -117,6 +116,8 @@ export default function App() {
         searchResults: result.searchResults ?? null,
         linkedinData: result.linkedinData ?? null,
         publicRecords: result.publicRecords ?? null,
+        aiSummary: result.aiSummary ?? null,
+        aiProvider: result.aiProvider ?? 'gemini',
         lowTextWarning,
         error: null
       })
@@ -256,7 +257,9 @@ export default function App() {
                 ...r,
                 searchResults: outcome.searchResults ?? r.searchResults,
                 linkedinData: outcome.linkedinData ?? null,
-                publicRecords: outcome.publicRecords ?? r.publicRecords
+                publicRecords: outcome.publicRecords ?? r.publicRecords,
+                aiSummary: outcome.aiSummary ?? r.aiSummary,
+                aiProvider: outcome.aiProvider ?? r.aiProvider
               }
             : r
         )
@@ -265,6 +268,15 @@ export default function App() {
       console.error('[App] runSearch failed', err)
     } finally {
       setSearchStatus(null)
+    }
+  }, [])
+
+  const handleExportRow = useCallback(async (row) => {
+    if (row.dbId == null) return
+    try {
+      await window.electron.exportRow(row.dbId)
+    } catch (err) {
+      console.error('[App] exportRow failed', err)
     }
   }, [])
 
@@ -300,6 +312,16 @@ export default function App() {
       ? 'Claude'
       : settings?.geminiModel?.replace(/^gemini-/i, 'Gemini ') || 'Gemini 1.5 Flash'
 
+  const selectedDbIds = useMemo(
+    () =>
+      rows
+        .filter((row) => selectedIds.has(row.id) && row.dbId != null && row.status === UPLOAD_STATUS.DONE)
+        .map((row) => row.dbId),
+    [rows, selectedIds]
+  )
+
+  const exportableCount = rows.filter((row) => row.status === UPLOAD_STATUS.DONE && row.dbId != null).length
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -330,14 +352,7 @@ export default function App() {
 
         {view === 'settings' ? (
           <div className="main-scroll" data-testid="settings-view">
-            <Topbar
-              title="Settings"
-              searchQuery=""
-              onSearchChange={() => {}}
-              onUploadClick={openUploadDialog}
-              onExportClick={() => {}}
-              exportDisabled
-            />
+            <Topbar title="Settings" searchQuery="" onSearchChange={() => {}} onUploadClick={openUploadDialog} />
             <SettingsPanel onClearAllData={handleClearAllData} onBack={() => setView('candidates')} />
             <StatusBar
               candidateCount={rows.length}
@@ -353,8 +368,12 @@ export default function App() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onUploadClick={openUploadDialog}
-              onExportClick={() => {}}
-              exportDisabled={rows.length === 0}
+            />
+
+            <ExportBar
+              disabled={exportableCount === 0}
+              selectedDbIds={selectedDbIds}
+              selectedCount={selectedDbIds.length}
             />
 
             {uploadRejection ? (
@@ -395,6 +414,7 @@ export default function App() {
               onDeleteRow={handleDeleteRow}
               onRerunSearch={handleRerunSearch}
               onRetryRow={handleRetryRow}
+              onExportRow={handleExportRow}
               searchQuery={searchQuery}
             />
 

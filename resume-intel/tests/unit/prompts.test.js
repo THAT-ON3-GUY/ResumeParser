@@ -15,7 +15,9 @@ const REQUIRED_FIELD_NAMES = [
   'pronouns',
   'years_experience',
   'contact_hints',
-  'parsing_confidence'
+  'parsing_confidence',
+  'source_quote',
+  'confidence'
 ]
 
 describe('EXTRACTION_PROMPT', () => {

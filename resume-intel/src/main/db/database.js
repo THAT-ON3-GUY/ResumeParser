@@ -136,6 +136,16 @@ export function getCandidateById(id) {
   return rowToRecord(row)
 }
 
+/** @returns {CandidateRecord[]} */
+export function getCandidatesByIds(ids) {
+  if (!ids?.length) return []
+  const placeholders = ids.map(() => '?').join(', ')
+  const rows = getDatabase()
+    .prepare(`SELECT * FROM candidates WHERE id IN (${placeholders}) ORDER BY created_at DESC, id DESC`)
+    .all(...ids)
+  return rows.map(rowToRecord)
+}
+
 export function deleteCandidate(id) {
   console.log('[database] deleteCandidate', id)
   getDatabase().prepare('DELETE FROM candidates WHERE id = ?').run(id)
@@ -177,4 +187,16 @@ export function updateCandidatePublicRecords(id, publicRecords) {
   getDatabase()
     .prepare('UPDATE candidates SET public_records = ? WHERE id = ?')
     .run(publicRecords ? JSON.stringify(publicRecords) : null, id)
+}
+
+/**
+ * @param {number} id
+ * @param {object|null} aiSummary
+ * @param {string|null} [aiProvider]
+ */
+export function updateCandidateAiSummary(id, aiSummary, aiProvider) {
+  console.log('[database] updateCandidateAiSummary', id)
+  getDatabase()
+    .prepare('UPDATE candidates SET ai_summary = ?, ai_provider = ? WHERE id = ?')
+    .run(JSON.stringify(aiSummary ?? {}), aiProvider ?? null, id)
 }

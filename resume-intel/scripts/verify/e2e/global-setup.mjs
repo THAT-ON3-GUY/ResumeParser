@@ -14,6 +14,16 @@ export default async function globalSetup() {
     throw new Error('npm run build failed before E2E tests')
   }
 
+  console.log('[e2e] Rebuilding native modules for Electron (better-sqlite3)...')
+  const native = spawnSync('npx electron-rebuild -f -w better-sqlite3', {
+    cwd: root,
+    shell: true,
+    stdio: 'inherit'
+  })
+  if (native.status !== 0) {
+    throw new Error('electron-rebuild failed before E2E tests')
+  }
+
   console.log('[e2e] Generating fixtures if needed...')
   spawnSync('node scripts/verify/fixtures/generate-fixtures.mjs', {
     cwd: root,

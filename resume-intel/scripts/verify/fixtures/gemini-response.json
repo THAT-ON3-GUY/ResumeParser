@@ -4,14 +4,18 @@
     "company": "Acme Corp",
     "title": "Senior Engineer",
     "start_year": 2020,
-    "end_year": null
+    "end_year": null,
+    "source_quote": "Senior Engineer, Acme Corp (2020–present)",
+    "confidence": "high"
   },
   "all_employers": [
     {
       "company": "Acme Corp",
       "title": "Senior Engineer",
       "start_year": 2020,
-      "end_year": null
+      "end_year": null,
+      "source_quote": "Senior Engineer, Acme Corp (2020–present)",
+      "confidence": "high"
     }
   ],
   "education": [
@@ -19,7 +23,9 @@
       "school": "State University",
       "degree": "BS",
       "field": "Computer Science",
-      "graduation_year": 2018
+      "graduation_year": 2018,
+      "source_quote": "State University — BS Computer Science, 2018",
+      "confidence": "high"
     }
   ],
   "licenses_certifications": [],

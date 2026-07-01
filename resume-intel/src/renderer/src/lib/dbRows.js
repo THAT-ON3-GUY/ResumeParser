@@ -9,6 +9,8 @@ export function candidateRecordToRow(record) {
     searchResults: record.search_results,
     linkedinData: record.linkedin_data,
     publicRecords: record.public_records,
+    aiSummary: record.ai_summary,
+    aiProvider: record.ai_provider,
     error: null,
     createdAt: record.created_at
   }

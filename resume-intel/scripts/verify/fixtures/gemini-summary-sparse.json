@@ -1,0 +1,8 @@
+{
+  "summary": "Insufficient data to produce a confident match assessment. Resume fields are sparse and no corroborating search, LinkedIn, or public-record signals were available.",
+  "match_confidence": "insufficient_data",
+  "best_outreach_method": "Review any resume contact hints manually before outreach",
+  "contact_hints": [],
+  "discrepancies": [],
+  "recommended_search_queries": []
+}

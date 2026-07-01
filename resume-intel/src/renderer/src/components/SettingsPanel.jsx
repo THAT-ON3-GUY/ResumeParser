@@ -171,6 +171,9 @@ export default function SettingsPanel({ onClearAllData, onBack }) {
         >
           Get a free key at aistudio.google.com
         </button>
+        <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>
+          Resume text is sent to Google Gemini for processing when you upload files.
+        </p>
 
         <PasswordField
           label="Claude API key"

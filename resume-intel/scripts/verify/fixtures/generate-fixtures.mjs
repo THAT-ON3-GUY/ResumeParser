@@ -94,18 +94,28 @@ async function writeDocx() {
 }
 
 function writeGeminiResponse() {
+  const employer = {
+    company: 'Acme Corp',
+    title: 'Senior Engineer',
+    start_year: 2020,
+    end_year: null,
+    source_quote: 'Senior Engineer, Acme Corp (2020–present)',
+    confidence: 'high'
+  }
   const data = {
     summary_title: 'Senior Engineer at Acme Corp',
-    current_or_most_recent_employer: {
-      company: 'Acme Corp',
-      title: 'Senior Engineer',
-      start_year: 2020,
-      end_year: null
-    },
-    all_employers: [
-      { company: 'Acme Corp', title: 'Senior Engineer', start_year: 2020, end_year: null }
+    current_or_most_recent_employer: employer,
+    all_employers: [employer],
+    education: [
+      {
+        school: 'State University',
+        degree: 'BS',
+        field: 'Computer Science',
+        graduation_year: 2018,
+        source_quote: 'State University — BS Computer Science, 2018',
+        confidence: 'high'
+      }
     ],
-    education: [{ school: 'State University', degree: 'BS', field: 'Computer Science', graduation_year: 2018 }],
     licenses_certifications: [],
     skills: ['JavaScript', 'React'],
     location_hints: ['Boston, MA'],
@@ -117,6 +127,85 @@ function writeGeminiResponse() {
     parsing_confidence: 'high'
   }
   writeFileSync(join(OUT, 'gemini-response.json'), JSON.stringify(data, null, 2))
+}
+
+function writeGeminiPeResponse() {
+  const employer = {
+    company: 'BuildCo',
+    title: 'Professional Engineer',
+    start_year: 2018,
+    end_year: null,
+    source_quote: 'Professional Engineer, BuildCo (2018–present)',
+    confidence: 'high'
+  }
+  const data = {
+    summary_title: 'Professional Engineer at BuildCo',
+    current_or_most_recent_employer: employer,
+    all_employers: [employer],
+    education: [
+      {
+        school: 'State University',
+        degree: 'BS',
+        field: 'Civil Engineering',
+        graduation_year: 2014,
+        source_quote: 'State University — BS Civil Engineering, 2014',
+        confidence: 'high'
+      }
+    ],
+    licenses_certifications: [
+      {
+        name: 'PE License',
+        issuing_body: 'Colorado State Board',
+        year: 2016,
+        source_quote: 'PE License — Colorado State Board, 2016',
+        confidence: 'high'
+      }
+    ],
+    skills: [],
+    location_hints: ['Denver, CO'],
+    associations_memberships: [],
+    languages: ['English'],
+    pronouns: null,
+    years_experience: 10,
+    contact_hints: [],
+    parsing_confidence: 'high'
+  }
+  writeFileSync(join(OUT, 'gemini-response-pe.json'), JSON.stringify(data, null, 2))
+}
+
+function writeGeminiSummaryFixtures() {
+  writeFileSync(
+    join(OUT, 'gemini-summary-response.json'),
+    JSON.stringify(
+      {
+        summary:
+          'Strong alignment between resume and LinkedIn: Senior Engineer at Acme Corp in Boston matches the scraped LinkedIn profile. Public records did not surface additional credentials.',
+        match_confidence: 'high',
+        best_outreach_method: 'LinkedIn InMail referencing Acme Corp engineering role',
+        contact_hints: [],
+        discrepancies: [],
+        recommended_search_queries: ['"Acme Corp" "Senior Engineer" site:linkedin.com/in']
+      },
+      null,
+      2
+    )
+  )
+  writeFileSync(
+    join(OUT, 'gemini-summary-sparse.json'),
+    JSON.stringify(
+      {
+        summary:
+          'Insufficient data to produce a confident match assessment. Resume fields are sparse and no corroborating search, LinkedIn, or public-record signals were available.',
+        match_confidence: 'insufficient_data',
+        best_outreach_method: 'Review any resume contact hints manually before outreach',
+        contact_hints: [],
+        discrepancies: [],
+        recommended_search_queries: []
+      },
+      null,
+      2
+    )
+  )
 }
 
 function writeDdgHtml() {
@@ -167,6 +256,8 @@ writePdf()
 writeMinimalScannedPdf()
 await writeDocx()
 writeGeminiResponse()
+writeGeminiPeResponse()
+writeGeminiSummaryFixtures()
 writeDdgHtml()
 writeLinkedInHtml()
-console.log('[fixtures] Wrote sample-resume.pdf, minimal-scanned.pdf, sample-resume.docx, gemini-response.json, ddg-results.html, linkedin-profile.html, linkedin-profile-404.html, linkedin-login.html')
+console.log('[fixtures] Wrote sample-resume.pdf, minimal-scanned.pdf, sample-resume.docx, gemini-response.json, gemini-response-pe.json, gemini-summary-response.json, gemini-summary-sparse.json, ddg-results.html, linkedin-profile.html, linkedin-profile-404.html, linkedin-login.html')

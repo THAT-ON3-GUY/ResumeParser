@@ -1,6 +1,10 @@
 export function ConfidenceBadge({ score, testId }) {
-  const s = String(score || 'low').toLowerCase()
-  const label = s.charAt(0).toUpperCase() + s.slice(1)
+  const raw = String(score || 'low').toLowerCase()
+  const s = raw === 'insufficient_data' ? 'missing' : raw
+  const label =
+    raw === 'insufficient_data'
+      ? 'Insufficient data'
+      : s.charAt(0).toUpperCase() + s.slice(1)
   return (
     <span className={`badge badge-${s}`} data-testid={testId}>
       {label}

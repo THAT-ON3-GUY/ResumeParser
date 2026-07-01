@@ -14,7 +14,15 @@ const LEGAL_FIELD_RE =
 const PE_LICENSE_RE = /\bPE\b|Professional Engineer|PE License/i
 
 function listText(values) {
-  return (values ?? []).map((v) => String(v)).join(' ')
+  return (values ?? [])
+    .map((v) => {
+      if (v == null) return ''
+      if (typeof v === 'string') return v
+      if (typeof v === 'object' && v.name) return String(v.name)
+      return String(v)
+    })
+    .filter(Boolean)
+    .join(' ')
 }
 
 function employerNames(extractedFields) {

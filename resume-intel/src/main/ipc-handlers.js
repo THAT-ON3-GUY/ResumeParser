@@ -11,10 +11,12 @@ import {
   clearAllCandidates,
   updateCandidateSearchResults,
   updateCandidateLinkedInData,
-  updateCandidatePublicRecords
+  updateCandidatePublicRecords,
+  updateCandidateAiSummary
 } from './db/database.js'
+import { exportCandidateRowCsv, exportCandidatesCsv, exportCandidatesExcel } from './export/exporter.js'
 import { readResumeText } from './parser/fileReader.js'
-import { extractResume } from './parser/aiProvider.js'
+import { extractResume, summarizeFindings } from './parser/aiProvider.js'
 import { searchDuckDuckGo } from './search/duckduckgo.js'
 import { checkPublicSources } from './search/publicSources.js'
 import {
@@ -91,10 +93,39 @@ async function runPublicRecordsForCandidate(candidateId, extractedFields) {
   }
 }
 
+async function runSummarizationForCandidate(candidateId, bundle) {
+  try {
+    console.log('[ipc] AI summarization start')
+    const aiSummary = await summarizeFindings(bundle)
+    const provider = store.get('aiProvider', 'gemini')
+    updateCandidateAiSummary(candidateId, aiSummary, provider)
+    return aiSummary
+  } catch (err) {
+    console.error('[ipc] summarization failed', err.message)
+    const fallback = {
+      summary: `Summarization failed: ${err.message}`,
+      match_confidence: 'insufficient_data',
+      best_outreach_method: '',
+      contact_hints: [],
+      discrepancies: [],
+      recommended_search_queries: []
+    }
+    const provider = store.get('aiProvider', 'gemini')
+    updateCandidateAiSummary(candidateId, fallback, provider)
+    return fallback
+  }
+}
+
 async function runEnrichmentForCandidate(candidateId, extractedFields) {
   const searchOutcome = await runSearchForCandidate(candidateId, extractedFields)
   const publicRecords = await runPublicRecordsForCandidate(candidateId, extractedFields)
-  return { ...searchOutcome, publicRecords }
+  const aiSummary = await runSummarizationForCandidate(candidateId, {
+    extracted_fields: extractedFields,
+    search_results: searchOutcome.searchResults,
+    linkedin_data: searchOutcome.linkedinData,
+    public_records: publicRecords
+  })
+  return { ...searchOutcome, publicRecords, aiSummary, aiProvider: store.get('aiProvider', 'gemini') }
 }
 
 export function registerIpcHandlers() {
@@ -107,6 +138,7 @@ export function registerIpcHandlers() {
     const { text, fileName, charCount } = await readResumeText(filePath)
     const parsed = await extractResume(text)
     const aiProvider = store.get('aiProvider', 'gemini')
+    console.log('[ipc] resume:parse aiProvider', aiProvider)
     const dbId = insertCandidate({
       fileName,
       rawText: text,
@@ -119,15 +151,27 @@ export function registerIpcHandlers() {
     let searchResults = null
     let linkedinData = null
     let publicRecords = null
+    let aiSummary = null
     if (store.get('autoSearchOnUpload', true)) {
       console.log('[ipc] resume:parse auto-search enabled')
       const outcome = await runEnrichmentForCandidate(dbId, parsed)
       searchResults = outcome.searchResults
       linkedinData = outcome.linkedinData
       publicRecords = outcome.publicRecords
+      aiSummary = outcome.aiSummary
     }
 
-    return { id: dbId, fileName, charCount, parsed, searchResults, linkedinData, publicRecords }
+    return {
+      id: dbId,
+      fileName,
+      charCount,
+      parsed,
+      searchResults,
+      linkedinData,
+      publicRecords,
+      aiSummary,
+      aiProvider
+    }
   })
 
   ipcMain.handle('search:run', async (_event, candidateId) => {
@@ -152,6 +196,21 @@ export function registerIpcHandlers() {
     console.log('[ipc] db:clear-all')
     clearAllCandidates()
     return { ok: true }
+  })
+
+  ipcMain.handle('export:row', async (_event, candidateId) => {
+    console.log('[ipc] export:row', candidateId)
+    return exportCandidateRowCsv(candidateId)
+  })
+
+  ipcMain.handle('export:csv', async (_event, candidateIds) => {
+    console.log('[ipc] export:csv', candidateIds?.length ?? 'all')
+    return exportCandidatesCsv(candidateIds)
+  })
+
+  ipcMain.handle('export:excel', async (_event, candidateIds) => {
+    console.log('[ipc] export:excel', candidateIds?.length ?? 'all')
+    return exportCandidatesExcel(candidateIds)
   })
 
   ipcMain.handle('settings:get', async () => {

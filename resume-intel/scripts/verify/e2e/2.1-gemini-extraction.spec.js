@@ -22,6 +22,8 @@ test.describe(`${FEATURE} — Gemini Resume Extraction`, () => {
       expect(rows.length).toBe(1)
       const fields = rows[0].extracted_fields
       expect(fields.all_employers?.[0]?.company).toBe('Acme Corp')
+      expect(fields.all_employers?.[0]?.source_quote).toBeTruthy()
+      expect(fields.all_employers?.[0]?.confidence).toBe('high')
       expect(fields.summary_title).toContain('Acme Corp')
     })
   })
@@ -40,6 +42,7 @@ test.describe(`${FEATURE} — Gemini Resume Extraction`, () => {
       await expect(page.getByTestId('result-status').filter({ hasText: 'Done' })).toHaveCount(1)
       const rows = await queryCandidates(page)
       expect(rows[0].extracted_fields.education?.[0]?.school).toBe('State University')
+      expect(rows[0].extracted_fields.education?.[0]?.source_quote).toBeTruthy()
     })
   })
 
@@ -50,19 +53,25 @@ test.describe(`${FEATURE} — Gemini Resume Extraction`, () => {
         const docx = path.join(FIXTURES_DIR, 'sample-resume.docx')
         await page.getByTestId('upload-input').setInputFiles(docx)
         await expect(
-          page.getByTestId('result-status').filter({ hasText: /API key not set/i })
+          page.getByTestId('result-status').filter({ hasText: 'Gemini API key not set. Add it in Settings.' })
         ).toHaveCount(1, { timeout: 30000 })
       },
       { e2e: false }
     )
   })
 
-  test('AC-5: licenses array is present in extracted schema', async () => {
-    await withFreshApp({}, async ({ page }) => {
-      await uploadAndParse(page)
-      const rows = await queryCandidates(page)
-      expect(Array.isArray(rows[0].extracted_fields.licenses_certifications)).toBe(true)
-    })
+  test('AC-5: PE license includes source_quote in extracted schema', async () => {
+    await withFreshApp(
+      {},
+      async ({ page }) => {
+        await uploadAndParse(page)
+        const rows = await queryCandidates(page)
+        const license = rows[0].extracted_fields.licenses_certifications?.[0]
+        expect(license?.name).toBe('PE License')
+        expect(license?.source_quote).toContain('PE License')
+      },
+      { geminiFixture: 'gemini-response-pe.json' }
+    )
   })
 
   test('AC-6: E2E uses fixture path without live Gemini network calls', async () => {

@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('electron', {
 
   clearAllCandidates: () => ipcRenderer.invoke('db:clear-all'),
 
+  exportRow: (candidateId) => ipcRenderer.invoke('export:row', candidateId),
+
+  exportCsv: (candidateIds) => ipcRenderer.invoke('export:csv', candidateIds),
+
+  exportExcel: (candidateIds) => ipcRenderer.invoke('export:excel', candidateIds),
+
   getSettings: () => ipcRenderer.invoke('settings:get'),
 
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
